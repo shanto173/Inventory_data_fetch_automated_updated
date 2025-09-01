@@ -151,7 +151,7 @@ for company_id, cname in COMPANIES.items():
 
     csrf_token = refresh_csrf()
     if company_id == 1:  # Zipper
-        time.sleep(5)
+        time.sleep(10)
 
     options = {"date_from": FROM_DATE, "date_to": TO_DATE, "company_id": company_id}
     context = {
