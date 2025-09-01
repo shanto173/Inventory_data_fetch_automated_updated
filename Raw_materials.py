@@ -155,6 +155,9 @@ def save_and_paste_to_sheet(records, cname):
         log.warning("Skip: DataFrame empty, not pasting.")
         return
 
+    if df.shape[1] > 1:
+        df = df.iloc[:, 1:]
+
     worksheet.clear()
     time.sleep(4)
     set_with_dataframe(worksheet, df)
