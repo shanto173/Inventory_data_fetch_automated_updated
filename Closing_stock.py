@@ -236,7 +236,7 @@ def paste_downloaded_file_to_gsheet(company_name, sheet_key, worksheet_name):
         log.info(f"✅ Loaded file {latest_file.name} into DataFrame (first column dropped)")
 
         scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-        creds = service_account.Credentials.from_service_account_file('GOOGLE_CREDENTIALS_BASE64', scopes=scope)
+        creds = service_account.Credentials.from_service_account_file('gcreds.json', scopes=scope)
         client = gspread.authorize(creds)
         
         sheet = client.open_by_key(sheet_key)
