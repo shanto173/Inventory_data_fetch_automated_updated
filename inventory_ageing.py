@@ -232,7 +232,6 @@ if __name__ == "__main__":
 
                     if worksheet is not None:
                         worksheet.clear()
-                        time.sleep(2)
                         set_with_dataframe(worksheet, df)
                         local_tz = pytz.timezone("Asia/Dhaka")
                         local_time = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
