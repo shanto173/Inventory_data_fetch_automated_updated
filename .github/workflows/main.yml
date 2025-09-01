@@ -3,14 +3,23 @@ name: Odoo Stock Report Automation
 on:
   workflow_dispatch:
     inputs:
+      script_choice:
+        description: "Which script to run?"
+        required: true
+        default: "Closing_stock.py"
+        type: choice
+        options:
+          - Closing_stock.py     # needs FROM_DATE and TO_DATE
+          - Raw_materials.py     # your second script, no dates
+
       from_date:
-        description: 'Start date (YYYY-MM-DD). Leave blank for current month start.'
+        description: "Start date (YYYY-MM-DD). Used only if Closing_stock.py is selected."
         required: false
-        default: ''
+        default: ""
       to_date:
-        description: 'End date (YYYY-MM-DD). Leave blank for today.'
+        description: "End date (YYYY-MM-DD). Used only if Closing_stock.py is selected."
         required: false
-        default: ''
+        default: ""
 
 jobs:
   download-and-upload:
@@ -30,7 +39,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests pandas gspread gspread-dataframe google-auth google-auth-oauthlib google-auth-httplib2 selenium webdriver-manager openpyxl pytz python-dotenv
 
-      - name: Set environment variables for dates
+      - name: Set environment variables
         run: |
           echo "FROM_DATE=${{ github.event.inputs.from_date }}" >> $GITHUB_ENV
           echo "TO_DATE=${{ github.event.inputs.to_date }}" >> $GITHUB_ENV
@@ -39,7 +48,8 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}" | base64 --decode > gcreds.json
 
-      - name: Run Odoo stock report script
+      - name: Run Closing_stock.py (with dates)
+        if: ${{ github.event.inputs.script_choice == 'Closing_stock.py' }}
         env:
           ODOO_URL: ${{ secrets.ODOO_URL }}
           ODOO_DB: ${{ secrets.ODOO_DB }}
@@ -48,3 +58,12 @@ jobs:
           FROM_DATE: ${{ env.FROM_DATE }}
           TO_DATE: ${{ env.TO_DATE }}
         run: python Closing_stock.py
+
+      - name: Run Raw_materials.py (no dates)
+        if: ${{ github.event.inputs.script_choice == 'Raw_materials.py' }}
+        env:
+          ODOO_URL: ${{ secrets.ODOO_URL }}
+          ODOO_DB: ${{ secrets.ODOO_DB }}
+          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
+          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
+        run: python Raw_materials.py
