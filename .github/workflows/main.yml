@@ -12,14 +12,14 @@ on:
           - Closing_stock.py
           - Raw_materials.py
           - pending_slider.py
-          - inventory_ageing.py   # <-- added
+          - inventory_ageing.py
 
       from_date:
-        description: "Start date (YYYY-MM-DD). Used if script requires dates."
+        description: "Start date (YYYY-MM-DD). Optional."
         required: false
         default: ""
       to_date:
-        description: "End date (YYYY-MM-DD). Used if script requires dates."
+        description: "End date (YYYY-MM-DD). Optional."
         required: false
         default: ""
 
@@ -43,12 +43,14 @@ jobs:
 
       - name: Set environment variables (dates)
         run: |
+          # FROM_DATE fallback
           if [ -z "${{ github.event.inputs.from_date }}" ]; then
-            echo "FROM_DATE=$(date +'%Y-%m-01')" >> $GITHUB_ENV
+            echo "FROM_DATE=" >> $GITHUB_ENV
           else
             echo "FROM_DATE=${{ github.event.inputs.from_date }}" >> $GITHUB_ENV
           fi
 
+          # TO_DATE fallback to today
           if [ -z "${{ github.event.inputs.to_date }}" ]; then
             echo "TO_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
           else

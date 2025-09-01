@@ -4,14 +4,14 @@ import re
 import logging
 import sys
 import os
-from datetime import date, datetime, timedelta
-import calendar
+from datetime import date, datetime
 import gspread
 from gspread_dataframe import set_with_dataframe
 from google.oauth2 import service_account
 import pandas as pd
 import pytz
 from dotenv import load_dotenv
+
 load_dotenv()
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger()
@@ -29,11 +29,14 @@ COMPANIES = {
 
 today = date.today()
 
-FROM_DATE = False  # no start date needed
-TO_DATE = os.getenv("TO_DATE")  # fetch from GitHub Actions input
+# ========= GITHUB ENV ==========
+FROM_DATE = os.getenv("FROM_DATE")  # from GitHub Actions
+TO_DATE = os.getenv("TO_DATE")      # from GitHub Actions
 
 if not TO_DATE:
-    TO_DATE = today.isoformat()  # fallback to today
+    TO_DATE = today.isoformat()
+if not FROM_DATE:
+    FROM_DATE = False  # keep False if wizard supports it
 
 session = requests.Session()
 USER_ID = None
@@ -76,7 +79,6 @@ def login():
     else:
         raise Exception("❌ Login failed")
 
-
 # ========= SWITCH COMPANY ==========
 def switch_company(company_id):
     if USER_ID is None:
@@ -100,18 +102,24 @@ def switch_company(company_id):
         print(f"🔄 Session switched to company {company_id}")
         return True
 
-
 # ========= CREATE AGEING WIZARD ==========
-def create_ageing_wizard(company_id, to_date):
+def create_ageing_wizard(company_id, from_date, to_date):
     payload = {
         "jsonrpc": "2.0",
         "method": "call",
         "params": {
             "model": "stock.forecast.report",
             "method": "web_save",
-            "args": [[], {"report_type": "ageing", "report_for": "rm", "all_iteam_list": [], "from_date": False, "to_date": to_date}],
+            "args": [[], {
+                "report_type": "ageing",
+                "report_for": "rm",
+                "all_iteam_list": [],
+                "from_date": from_date,
+                "to_date": to_date
+            }],
             "kwargs": {
-                "context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": USER_ID, "allowed_company_ids": [company_id], "company_id": company_id},
+                "context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": USER_ID,
+                            "allowed_company_ids": [company_id], "company_id": company_id},
                 "specification": {
                     "report_type": {},
                     "report_for": {},
@@ -132,7 +140,6 @@ def create_ageing_wizard(company_id, to_date):
     else:
         raise Exception(f"❌ Failed to create ageing wizard: {r.text}")
 
-
 # ========= COMPUTE AGEING ==========
 def compute_ageing(company_id, wizard_id):
     payload = {
@@ -142,7 +149,10 @@ def compute_ageing(company_id, wizard_id):
             "model": "stock.forecast.report",
             "method": "print_date_wise_stock_register",
             "args": [[wizard_id]],
-            "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": USER_ID, "allowed_company_ids": [company_id], "company_id": company_id}},
+            "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka",
+                                   "uid": USER_ID,
+                                   "allowed_company_ids": [company_id],
+                                   "company_id": company_id}},
         },
     }
     r = session.post(f"{ODOO_URL}/web/dataset/call_button", json=payload)
@@ -154,10 +164,10 @@ def compute_ageing(company_id, wizard_id):
         print(f"⚡ Ageing computed for wizard {wizard_id} (company {company_id})")
     return result
 
-
 # ========= FETCH AGEING REPORT ==========
 def fetch_ageing(company_id, cname, wizard_id):
-    context = {"allowed_company_ids": [company_id], "company_id": company_id, "active_model": "stock.forecast.report", "active_id": wizard_id, "active_ids": [wizard_id]}
+    context = {"allowed_company_ids": [company_id], "company_id": company_id,
+               "active_model": "stock.forecast.report", "active_id": wizard_id, "active_ids": [wizard_id]}
     payload = {
         "jsonrpc": "2.0",
         "method": "call",
@@ -179,7 +189,6 @@ def fetch_ageing(company_id, cname, wizard_id):
     r.raise_for_status()
     try:
         data = r.json()["result"]["records"]
-
         def flatten(record):
             flat = {}
             for k, v in record.items():
@@ -188,14 +197,12 @@ def fetch_ageing(company_id, cname, wizard_id):
                 else:
                     flat[LABELS.get(k, k)] = v
             return flat
-
         flattened = [flatten(rec) for rec in data]
         print(f"📊 {cname}: {len(flattened)} ageing rows fetched")
         return flattened
     except Exception:
         print(f"❌ {cname}: Failed to parse ageing report:", r.text[:200])
         return []
-
 
 # ========= MAIN ==========
 if __name__ == "__main__":
@@ -204,7 +211,7 @@ if __name__ == "__main__":
 
     for cid, cname in COMPANIES.items():
         if switch_company(cid):
-            wiz_id = create_ageing_wizard(cid, TO_DATE)
+            wiz_id = create_ageing_wizard(cid, FROM_DATE, TO_DATE)
             compute_ageing(cid, wiz_id)
             records = fetch_ageing(cid, cname, wiz_id)
 
@@ -229,7 +236,7 @@ if __name__ == "__main__":
                     else:
                         worksheet = None
 
-                    if worksheet is not None:
+                    if worksheet is not None and not df.empty:
                         worksheet.clear()
                         set_with_dataframe(worksheet, df)
                         local_tz = pytz.timezone("Asia/Dhaka")
