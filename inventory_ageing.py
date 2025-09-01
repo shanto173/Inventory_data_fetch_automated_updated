@@ -223,8 +223,7 @@ if __name__ == "__main__":
                         sheet = client.open_by_key("1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0")
                         worksheet = sheet.worksheet("age_ZIP")
                     elif cid == 3:  # Metal Trims
-                        creds = service_account.Credentials.from_service_account_file("gcreds.json")
-                        client = gspread.authorize(creds)
+                        client = gspread.service_account(filename="gcreds.json")
                         sheet = client.open_by_key("1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0")
                         worksheet = sheet.worksheet("age_MT")
                     else:
