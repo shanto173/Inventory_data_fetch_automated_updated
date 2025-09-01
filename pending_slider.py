@@ -25,6 +25,7 @@ COMPANIES = {
 }
 
 # ========= DATE HANDLING ==========
+
 from_date = os.getenv("FROM_DATE")
 to_date = os.getenv("TO_DATE")
 
@@ -35,9 +36,8 @@ if not from_date or not to_date:
     FROM_DATE = first_day.strftime("%Y-%m-%d")
     TO_DATE = last_day.strftime("%Y-%m-%d")
 else:
-    FROM_DATE, TO_DATE = from_date, to_date
-
-print(f"📅 Report period: {FROM_DATE} → {TO_DATE}")
+    FROM_DATE = from_date
+    TO_DATE = to_date
 
 # ========= GOOGLE SHEETS AUTH ==========
 scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
