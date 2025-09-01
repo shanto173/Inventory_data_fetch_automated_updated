@@ -14,6 +14,7 @@ on:
           - pending_slider.py
           - inventory_ageing.py
           - inovice_summary.py
+          - Relese_inovice_summary.py
 
       from_date:
         description: "Start date (YYYY-MM-DD). Optional."
@@ -113,3 +114,13 @@ jobs:
           FROM_DATE: ${{ env.FROM_DATE }}
           TO_DATE: ${{ env.TO_DATE }}
         run: python inovice_summary.py
+
+      - name: Run Relese_inovice_summary.py
+        env:
+          ODOO_URL: ${{ secrets.ODOO_URL }}
+          ODOO_DB: ${{ secrets.ODOO_DB }}
+          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
+          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
+          FROM_DATE: ${{ env.FROM_DATE }}
+          TO_DATE: ${{ env.TO_DATE }}
+        run: python Relese_inovice_summary.py
