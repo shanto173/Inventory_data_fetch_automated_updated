@@ -1,7 +1,7 @@
 import requests, json, re, os, time
 import pandas as pd
 import pytz
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 import calendar
 import gspread
 from gspread_dataframe import set_with_dataframe
@@ -74,6 +74,8 @@ def generate_and_upload(company_id, company_cfg):
 
     print(f"\n🔹 Processing {name} (ID={company_id})")
 
+    context = {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]}
+
     # Step 3: Onchange
     session.post(f"{ODOO_URL}/web/dataset/call_kw/{MODEL}/onchange", json={
         "id": 1,
@@ -83,7 +85,7 @@ def generate_and_upload(company_id, company_cfg):
             "model": MODEL,
             "method": "onchange",
             "args": [[], {}, [], {}],
-            "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]}}
+            "kwargs": {"context": context}
         }
     })
 
@@ -98,20 +100,9 @@ def generate_and_upload(company_id, company_cfg):
             "args": [[], {
                 "report_type": REPORT_TYPE,
                 "date_from": FROM_DATE,
-                "date_to": TO_DATE,
-                "all_buyer_list": [],
-                "all_Customer": []
+                "date_to": TO_DATE
             }],
-            "kwargs": {
-                "context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]},
-                "specification": {
-                    "report_type": {},
-                    "date_from": {},
-                    "date_to": {},
-                    "all_buyer_list": {"fields": {"display_name": {}}},
-                    "all_Customer": {"fields": {"display_name": {}}}
-                }
-            }
+            "kwargs": {"context": context}
         }
     })
 
@@ -129,7 +120,7 @@ def generate_and_upload(company_id, company_cfg):
             "model": MODEL,
             "method": REPORT_BUTTON_METHOD,
             "args": [[wizard_id]],
-            "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]}}
+            "kwargs": {"context": context}
         }
     })
 
@@ -138,7 +129,7 @@ def generate_and_upload(company_id, company_cfg):
         raise Exception(f"❌ Failed to generate report: {resp.text}")
 
     # Step 6: Download XLSX
-    report_path = f"/report/xlsx/{report_name}/{wizard_id}?options={json.dumps({'date_from': FROM_DATE, 'date_to': TO_DATE, 'company_id': company_id})}&context={json.dumps({'lang':'en_US','tz':'Asia/Dhaka','uid':uid,'allowed_company_ids':[company_id]})}"
+    report_path = f"/report/xlsx/{report_name}/{wizard_id}?options={json.dumps({'date_from': FROM_DATE, 'date_to': TO_DATE, 'company_id': company_id})}&context={json.dumps(context)}"
     resp = session.post(f"{ODOO_URL}/report/download",
                         data={"data": json.dumps([report_path, "xlsx"]), "context": json.dumps({}), "token": "dummy", "csrf_token": csrf_token},
                         headers={"X-CSRF-Token": csrf_token, "Referer": f"{ODOO_URL}/web"}, timeout=60)
