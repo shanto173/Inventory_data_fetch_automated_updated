@@ -47,4 +47,4 @@ jobs:
           ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
           FROM_DATE: ${{ env.FROM_DATE }}
           TO_DATE: ${{ env.TO_DATE }}
-        run: python odoo_stock_report.py
+        run: python Closing_stock.py
