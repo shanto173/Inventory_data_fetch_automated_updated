@@ -11,7 +11,8 @@ from google.oauth2 import service_account
 import pandas as pd
 import pytz
 from dotenv import load_dotenv
-
+from pathlib import Path
+import time
 load_dotenv()
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger()
@@ -199,7 +200,6 @@ for company_id, cname in COMPANIES.items():
                     print("Skip: DataFrame empty, not pasting to sheet.")
                 else:
                     ws.clear()
-                    time.sleep(2)
                     set_with_dataframe(ws, df)
                     timestamp = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
                     ws.update("AC2", [[timestamp]])
