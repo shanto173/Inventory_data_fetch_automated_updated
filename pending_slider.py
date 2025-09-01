@@ -1,7 +1,7 @@
 import requests, json, re, os, time
 import pandas as pd
 import pytz
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import calendar
 import gspread
 from gspread_dataframe import set_with_dataframe
@@ -39,7 +39,7 @@ else:
 
 print(f"📅 Report period: {FROM_DATE} → {TO_DATE}")
 
-# ========= GOOGLE AUTH ==========
+# ========= GOOGLE SHEETS AUTH ==========
 scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 creds = service_account.Credentials.from_service_account_file("gcreds.json", scopes=scope)
 client = gspread.authorize(creds)
@@ -81,12 +81,7 @@ def generate_and_upload(company_id, company_cfg):
         "id": 1,
         "jsonrpc": "2.0",
         "method": "call",
-        "params": {
-            "model": MODEL,
-            "method": "onchange",
-            "args": [[], {}, [], {}],
-            "kwargs": {"context": context}
-        }
+        "params": {"model": MODEL, "method": "onchange", "args": [[], {}, [], {}], "kwargs": {"context": context}}
     })
 
     # Step 4: Save wizard
@@ -94,44 +89,32 @@ def generate_and_upload(company_id, company_cfg):
         "id": 2,
         "jsonrpc": "2.0",
         "method": "call",
-        "params": {
-            "model": MODEL,
-            "method": "web_save",
-            "args": [[], {
-                "report_type": REPORT_TYPE,
-                "date_from": FROM_DATE,
-                "date_to": TO_DATE
-            }],
-            "kwargs": {"context": context}
-        }
+        "params": {"model": MODEL, "method": "web_save",
+                   "args": [[], {"report_type": REPORT_TYPE, "date_from": FROM_DATE, "date_to": TO_DATE}],
+                   "kwargs": {"context": context}}
     })
-
-    if "result" not in resp.json():
+    wizard_id = resp.json().get("result", [{}])[0].get("id")
+    if not wizard_id:
         raise Exception(f"❌ Wizard creation failed: {resp.text}")
+    print("✅ Wizard saved, ID =", wizard_id)
 
-    wizard_id = resp.json()["result"][0]["id"]
-
-    # Step 5: Trigger report
+    # Step 5: Trigger report generation
     resp = session.post(f"{ODOO_URL}/web/dataset/call_button", json={
         "id": 3,
         "jsonrpc": "2.0",
         "method": "call",
-        "params": {
-            "model": MODEL,
-            "method": REPORT_BUTTON_METHOD,
-            "args": [[wizard_id]],
-            "kwargs": {"context": context}
-        }
+        "params": {"model": MODEL, "method": REPORT_BUTTON_METHOD, "args": [[wizard_id]], "kwargs": {"context": context}}
     })
-
     report_name = resp.json().get("result", {}).get("report_name")
     if not report_name:
         raise Exception(f"❌ Failed to generate report: {resp.text}")
+    print("✅ Report generated:", report_name)
 
     # Step 6: Download XLSX
-    report_path = f"/report/xlsx/{report_name}/{wizard_id}?options={json.dumps({'date_from': FROM_DATE, 'date_to': TO_DATE, 'company_id': company_id})}&context={json.dumps(context)}"
+    report_path = f"/report/xlsx/{report_name}/{wizard_id}?options={json.dumps({'date_from': FROM_DATE,'date_to': TO_DATE,'company_id': company_id})}&context={json.dumps(context)}"
     resp = session.post(f"{ODOO_URL}/report/download",
-                        data={"data": json.dumps([report_path, "xlsx"]), "context": json.dumps({}), "token": "dummy", "csrf_token": csrf_token},
+                        data={"data": json.dumps([report_path, "xlsx"]), "context": json.dumps({}),
+                              "token": "dummy", "csrf_token": csrf_token},
                         headers={"X-CSRF-Token": csrf_token, "Referer": f"{ODOO_URL}/web"}, timeout=60)
     filename = f"{name}_{REPORT_TYPE}_{FROM_DATE}_to_{TO_DATE}.xlsx"
     with open(filename, "wb") as f:
@@ -146,7 +129,7 @@ def generate_and_upload(company_id, company_cfg):
 
     worksheet = client.open_by_key(SHEET_ID).worksheet(sheet_name)
     worksheet.batch_clear([clear_range])
-    time.sleep(3)
+    time.sleep(2)
     set_with_dataframe(worksheet, df, row=2, col=1)
 
     local_time = datetime.now(pytz.timezone("Asia/Dhaka")).strftime("%Y-%m-%d %H:%M:%S")
@@ -154,7 +137,7 @@ def generate_and_upload(company_id, company_cfg):
     print(f"✅ {name} data pasted to {sheet_name}, timestamp: {local_time}")
 
 
-# Run all companies
+# 🔄 Run for all companies
 for cid, cfg in COMPANIES.items():
     try:
         generate_and_upload(cid, cfg)
