@@ -28,13 +28,14 @@ COMPANIES = {
 from_date = os.getenv("FROM_DATE")
 to_date = os.getenv("TO_DATE")
 
-today = date.today()
-first_day = today.replace(day=1)
-last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
-
-# If env variables are empty or None, default to current month
-FROM_DATE = from_date if from_date else first_day.strftime("%Y-%m-%d")
-TO_DATE = to_date if to_date else last_day.strftime("%Y-%m-%d")
+if not from_date or not to_date:
+    today = date.today()
+    first_day = today.replace(day=1)
+    last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+    FROM_DATE = first_day.strftime("%Y-%m-%d")
+    TO_DATE = last_day.strftime("%Y-%m-%d")
+else:
+    FROM_DATE, TO_DATE = from_date, to_date
 
 print(f"📅 Report period: {FROM_DATE} → {TO_DATE}")
 
@@ -66,32 +67,75 @@ print("✅ CSRF token =", csrf_token)
 
 # ========= MAIN FUNCTION ==========
 def generate_and_upload(company_id, company_cfg):
-    name, sheet_name, clear_range, ts_cell = company_cfg["name"], company_cfg["sheet"], company_cfg["clear_range"], company_cfg["timestamp_cell"]
+    name = company_cfg["name"]
+    sheet_name = company_cfg["sheet"]
+    clear_range = company_cfg["clear_range"]
+    ts_cell = company_cfg["timestamp_cell"]
+
     print(f"\n🔹 Processing {name} (ID={company_id})")
 
     # Step 3: Onchange
     session.post(f"{ODOO_URL}/web/dataset/call_kw/{MODEL}/onchange", json={
-        "id": 1, "jsonrpc": "2.0", "method": "call",
-        "params": {"model": MODEL, "method": "onchange", "args": [[], {}, [], {}],
-                   "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]}}}
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": {
+            "model": MODEL,
+            "method": "onchange",
+            "args": [[], {}, [], {}],
+            "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]}}
+        }
     })
 
     # Step 4: Save wizard
     resp = session.post(f"{ODOO_URL}/web/dataset/call_kw/{MODEL}/web_save", json={
-        "id": 2, "jsonrpc": "2.0", "method": "call",
-        "params": {"model": MODEL, "method": "web_save",
-                   "args": [[], {"report_type": REPORT_TYPE, "date_from": FROM_DATE, "date_to": TO_DATE}],
-                   "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]}}}
+        "id": 2,
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": {
+            "model": MODEL,
+            "method": "web_save",
+            "args": [[], {
+                "report_type": REPORT_TYPE,
+                "date_from": FROM_DATE,
+                "date_to": TO_DATE,
+                "all_buyer_list": [],
+                "all_Customer": []
+            }],
+            "kwargs": {
+                "context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]},
+                "specification": {
+                    "report_type": {},
+                    "date_from": {},
+                    "date_to": {},
+                    "all_buyer_list": {"fields": {"display_name": {}}},
+                    "all_Customer": {"fields": {"display_name": {}}}
+                }
+            }
+        }
     })
+
+    if "result" not in resp.json():
+        raise Exception(f"❌ Wizard creation failed: {resp.text}")
+
     wizard_id = resp.json()["result"][0]["id"]
 
     # Step 5: Trigger report
     resp = session.post(f"{ODOO_URL}/web/dataset/call_button", json={
-        "id": 3, "jsonrpc": "2.0", "method": "call",
-        "params": {"model": MODEL, "method": REPORT_BUTTON_METHOD, "args": [[wizard_id]],
-                   "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]}}}
+        "id": 3,
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": {
+            "model": MODEL,
+            "method": REPORT_BUTTON_METHOD,
+            "args": [[wizard_id]],
+            "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": uid, "allowed_company_ids": [company_id]}}
+        }
     })
-    report_name = resp.json()["result"]["report_name"]
+
+    report_name = resp.json().get("result", {}).get("report_name")
+    if not report_name:
+        raise Exception(f"❌ Failed to generate report: {resp.text}")
 
     # Step 6: Download XLSX
     report_path = f"/report/xlsx/{report_name}/{wizard_id}?options={json.dumps({'date_from': FROM_DATE, 'date_to': TO_DATE, 'company_id': company_id})}&context={json.dumps({'lang':'en_US','tz':'Asia/Dhaka','uid':uid,'allowed_company_ids':[company_id]})}"
@@ -117,6 +161,7 @@ def generate_and_upload(company_id, company_cfg):
     local_time = datetime.now(pytz.timezone("Asia/Dhaka")).strftime("%Y-%m-%d %H:%M:%S")
     worksheet.update(ts_cell, [[local_time]])
     print(f"✅ {name} data pasted to {sheet_name}, timestamp: {local_time}")
+
 
 # Run all companies
 for cid, cfg in COMPANIES.items():
