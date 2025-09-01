@@ -10,14 +10,15 @@ on:
         type: choice
         options:
           - Closing_stock.py     # needs FROM_DATE and TO_DATE
-          - Raw_materials.py     # your second script, no dates
+          - Raw_materials.py     # no dates
+          - pending_slider.py    # needs FROM_DATE and TO_DATE
 
       from_date:
-        description: "Start date (YYYY-MM-DD). Used only if Closing_stock.py is selected."
+        description: "Start date (YYYY-MM-DD). Used if script requires dates."
         required: false
         default: ""
       to_date:
-        description: "End date (YYYY-MM-DD). Used only if Closing_stock.py is selected."
+        description: "End date (YYYY-MM-DD). Used if script requires dates."
         required: false
         default: ""
 
@@ -39,16 +40,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests pandas gspread gspread-dataframe google-auth google-auth-oauthlib google-auth-httplib2 selenium webdriver-manager openpyxl pytz python-dotenv
 
-      - name: Set environment variables
+      - name: Set environment variables (dates)
         run: |
-          echo "FROM_DATE=${{ github.event.inputs.from_date }}" >> $GITHUB_ENV
-          echo "TO_DATE=${{ github.event.inputs.to_date }}" >> $GITHUB_ENV
+          # Default to first of month → last day if not provided
+          if [ -z "${{ github.event.inputs.from_date }}" ]; then
+            echo "FROM_DATE=$(date +'%Y-%m-01')" >> $GITHUB_ENV
+          else
+            echo "FROM_DATE=${{ github.event.inputs.from_date }}" >> $GITHUB_ENV
+          fi
+
+          if [ -z "${{ github.event.inputs.to_date }}" ]; then
+            echo "TO_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          else
+            echo "TO_DATE=${{ github.event.inputs.to_date }}" >> $GITHUB_ENV
+          fi
 
       - name: Decode Google credentials
         run: |
           echo "${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}" | base64 --decode > gcreds.json
 
-      - name: Run Closing_stock.py (with dates)
+      - name: Run Closing_stock.py
         if: ${{ github.event.inputs.script_choice == 'Closing_stock.py' }}
         env:
           ODOO_URL: ${{ secrets.ODOO_URL }}
@@ -59,7 +70,7 @@ jobs:
           TO_DATE: ${{ env.TO_DATE }}
         run: python Closing_stock.py
 
-      - name: Run Raw_materials.py (no dates)
+      - name: Run Raw_materials.py
         if: ${{ github.event.inputs.script_choice == 'Raw_materials.py' }}
         env:
           ODOO_URL: ${{ secrets.ODOO_URL }}
@@ -67,3 +78,14 @@ jobs:
           ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
           ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
         run: python Raw_materials.py
+
+      - name: Run pending_slider.py
+        if: ${{ github.event.inputs.script_choice == 'pending_slider.py' }}
+        env:
+          ODOO_URL: ${{ secrets.ODOO_URL }}
+          ODOO_DB: ${{ secrets.ODOO_DB }}
+          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
+          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
+          FROM_DATE: ${{ env.FROM_DATE }}
+          TO_DATE: ${{ env.TO_DATE }}
+        run: python pending_slider.py
