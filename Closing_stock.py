@@ -12,7 +12,7 @@ from google.oauth2 import service_account
 import gspread
 from gspread_dataframe import set_with_dataframe
 from dotenv import load_dotenv
-from datetime import date
+
 # ===== Setup Logging =====
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger()
@@ -40,14 +40,15 @@ SHEET_INFO = {
     }
 }
 
-
-
-# Default: current month 1st to today
+# ===== Default: current month 1st to today if env vars are empty =====
 today = date.today()
-FROM_DATE = os.getenv("FROM_DATE", today.replace(day=1).isoformat())
-TO_DATE = os.getenv("TO_DATE", today.isoformat())
+from_date_env = os.getenv("FROM_DATE", "").strip()
+to_date_env = os.getenv("TO_DATE", "").strip()
 
-print(f"Using FROM_DATE={FROM_DATE}, TO_DATE={TO_DATE}")
+FROM_DATE = from_date_env if from_date_env else today.replace(day=1).isoformat()
+TO_DATE = to_date_env if to_date_env else today.isoformat()
+
+log.info(f"Using FROM_DATE={FROM_DATE}, TO_DATE={TO_DATE}")
 
 DOWNLOAD_DIR = os.path.join(os.getcwd(), "download")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -229,7 +230,7 @@ def paste_downloaded_file_to_gsheet(company_name, sheet_key, worksheet_name):
         latest_file = files[0]
         df = pd.read_excel(latest_file)
         
-        # Drop first column
+        # Drop first column if exists
         if df.shape[1] > 1:
             df = df.iloc[:, 1:]
         
