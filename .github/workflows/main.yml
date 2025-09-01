@@ -9,9 +9,10 @@ on:
         default: "Closing_stock.py"
         type: choice
         options:
-          - Closing_stock.py     # needs FROM_DATE and TO_DATE
-          - Raw_materials.py     # no dates
-          - pending_slider.py    # needs FROM_DATE and TO_DATE
+          - Closing_stock.py
+          - Raw_materials.py
+          - pending_slider.py
+          - inventory_ageing.py   # <-- added
 
       from_date:
         description: "Start date (YYYY-MM-DD). Used if script requires dates."
@@ -42,7 +43,6 @@ jobs:
 
       - name: Set environment variables (dates)
         run: |
-          # Default to first of month → last day if not provided
           if [ -z "${{ github.event.inputs.from_date }}" ]; then
             echo "FROM_DATE=$(date +'%Y-%m-01')" >> $GITHUB_ENV
           else
@@ -89,3 +89,14 @@ jobs:
           FROM_DATE: ${{ env.FROM_DATE }}
           TO_DATE: ${{ env.TO_DATE }}
         run: python pending_slider.py
+
+      - name: Run inventory_ageing.py
+        if: ${{ github.event.inputs.script_choice == 'inventory_ageing.py' }}
+        env:
+          ODOO_URL: ${{ secrets.ODOO_URL }}
+          ODOO_DB: ${{ secrets.ODOO_DB }}
+          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
+          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
+          FROM_DATE: ${{ env.FROM_DATE }}
+          TO_DATE: ${{ env.TO_DATE }}
+        run: python inventory_ageing.py
