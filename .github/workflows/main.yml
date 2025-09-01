@@ -4,17 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       script_choice:
-        description: "Which script to run?"
+        description: "Which script(s) to run? Select single or 'All'."
         required: true
         default: "Closing_stock.py"
         type: choice
         options:
+          - All
           - Closing_stock.py
           - Raw_materials.py
           - pending_slider.py
           - inventory_ageing.py
           - inovice_summary.py
           - Relese_inovice_summary.py
+
 
       from_date:
         description: "Start date (YYYY-MM-DD). Optional."
@@ -26,13 +28,12 @@ on:
         default: ""
 
   schedule:
-    # Run every 30 minutes
+    # Run every 30 minutes automatically
     - cron: '*/30 * * * *'
 
 jobs:
   download-and-upload:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -67,8 +68,31 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}" | base64 --decode > gcreds.json
 
-      - name: Run Closing_stock.py
-        if: ${{ github.event.inputs.script_choice == 'Closing_stock.py' }}
+      - name: Run selected scripts
+        run: |
+          # List all scripts
+          ALL_SCRIPTS=(
+            "Closing_stock.py"
+            "Raw_materials.py"
+            "pending_slider.py"
+            "inventory_ageing.py"
+            "inovice_summary.py"
+            "Relese_inovice_summary.py"
+          )
+
+          # Determine scripts to run
+          INPUT="${{ github.event.inputs.script_choice }}"
+          if [ "$INPUT" == "All" ]; then
+            SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
+          else
+            SCRIPTS_TO_RUN=("$INPUT")
+          fi
+
+          # Execute each script
+          for SCRIPT in "${SCRIPTS_TO_RUN[@]}"; do
+            echo "▶ Running $SCRIPT..."
+            python "$SCRIPT"
+          done
         env:
           ODOO_URL: ${{ secrets.ODOO_URL }}
           ODOO_DB: ${{ secrets.ODOO_DB }}
@@ -76,57 +100,3 @@ jobs:
           ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
           FROM_DATE: ${{ env.FROM_DATE }}
           TO_DATE: ${{ env.TO_DATE }}
-        run: python Closing_stock.py
-
-      - name: Run Raw_materials.py
-        if: ${{ github.event.inputs.script_choice == 'Raw_materials.py' }}
-        env:
-          ODOO_URL: ${{ secrets.ODOO_URL }}
-          ODOO_DB: ${{ secrets.ODOO_DB }}
-          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
-          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
-        run: python Raw_materials.py
-
-      - name: Run pending_slider.py
-        if: ${{ github.event.inputs.script_choice == 'pending_slider.py' }}
-        env:
-          ODOO_URL: ${{ secrets.ODOO_URL }}
-          ODOO_DB: ${{ secrets.ODOO_DB }}
-          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
-          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
-          FROM_DATE: ${{ env.FROM_DATE }}
-          TO_DATE: ${{ env.TO_DATE }}
-        run: python pending_slider.py
-
-      - name: Run inventory_ageing.py
-        if: ${{ github.event.inputs.script_choice == 'inventory_ageing.py' }}
-        env:
-          ODOO_URL: ${{ secrets.ODOO_URL }}
-          ODOO_DB: ${{ secrets.ODOO_DB }}
-          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
-          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
-          FROM_DATE: ${{ env.FROM_DATE }}
-          TO_DATE: ${{ env.TO_DATE }}
-        run: python inventory_ageing.py
-
-      - name: Run inovice_summary.py
-        if: ${{ github.event.inputs.script_choice == 'inovice_summary.py' }}
-        env:
-          ODOO_URL: ${{ secrets.ODOO_URL }}
-          ODOO_DB: ${{ secrets.ODOO_DB }}
-          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
-          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
-          FROM_DATE: ${{ env.FROM_DATE }}
-          TO_DATE: ${{ env.TO_DATE }}
-        run: python inovice_summary.py
-
-      - name: Run Relese_inovice_summary.py
-        if: ${{ github.event.inputs.script_choice == 'Relese_inovice_summary.py' }}
-        env:
-          ODOO_URL: ${{ secrets.ODOO_URL }}
-          ODOO_DB: ${{ secrets.ODOO_DB }}
-          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
-          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
-          FROM_DATE: ${{ env.FROM_DATE }}
-          TO_DATE: ${{ env.TO_DATE }}
-        run: python Relese_inovice_summary.py
