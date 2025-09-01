@@ -4,20 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       script_choice:
-        description: "Select one or more scripts to run"
+        description: "Which script(s) to run? Choose single, multiple (comma separated), or 'All'."
         required: true
-        type: choice
-        multiple: true
-        default:
-          - Closing_stock.py
-        options:
-          - Closing_stock.py
-          - Raw_materials.py
-          - pending_slider.py
-          - inventory_ageing.py
-          - inovice_summary.py
-          - Relese_inovice_summary.py
-          - All
+        default: "Closing_stock.py"
       from_date:
         description: "Start date (YYYY-MM-DD). Optional."
         required: false
@@ -68,8 +57,9 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}" | base64 --decode > gcreds.json
 
-      - name: Run selected scripts
+      - name: Run scripts
         run: |
+          # Define all available scripts
           ALL_SCRIPTS=(
             "Closing_stock.py"
             "Raw_materials.py"
@@ -79,20 +69,19 @@ jobs:
             "Relese_inovice_summary.py"
           )
 
-          # Determine scripts to run
+          # Determine which scripts to run
           if [ "${{ github.event_name }}" == "schedule" ]; then
             # Scheduled run: run all scripts
             SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
           else
-            # Manual run: read selected scripts
-            SCRIPTS_TO_RUN=("${{ github.event.inputs.script_choice[@] }}")
-            # If "All" selected manually, run all scripts
-            for i in "${SCRIPTS_TO_RUN[@]}"; do
-              if [ "$i" == "All" ]; then
-                SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
-                break
-              fi
-            done
+            # Manual run
+            INPUT="${{ github.event.inputs.script_choice }}"
+            if [ "$INPUT" == "All" ]; then
+              SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
+            else
+              # Support multiple scripts via comma-separated input
+              IFS=',' read -ra SCRIPTS_TO_RUN <<< "$INPUT"
+            fi
           fi
 
           # Run each script
