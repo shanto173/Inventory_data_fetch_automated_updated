@@ -13,7 +13,7 @@ on:
           - Raw_materials.py
           - pending_slider.py
           - inventory_ageing.py
-          - invoice_summary.py
+          - inovice_summary.py
 
       from_date:
         description: "Start date (YYYY-MM-DD). Optional."
@@ -104,7 +104,7 @@ jobs:
           TO_DATE: ${{ env.TO_DATE }}
         run: python inventory_ageing.py
 
-      - name: Run invoice_summary.py
+      - name: Run inovice_summary.py
         env:
           ODOO_URL: ${{ secrets.ODOO_URL }}
           ODOO_DB: ${{ secrets.ODOO_DB }}
@@ -112,4 +112,4 @@ jobs:
           ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
           FROM_DATE: ${{ env.FROM_DATE }}
           TO_DATE: ${{ env.TO_DATE }}
-        run: python invoice_summary.py
+        run: python inovice_summary.py
