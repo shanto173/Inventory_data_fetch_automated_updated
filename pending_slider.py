@@ -28,14 +28,13 @@ COMPANIES = {
 from_date = os.getenv("FROM_DATE")
 to_date = os.getenv("TO_DATE")
 
-if not from_date or not to_date:
-    today = date.today()
-    first_day = today.replace(day=1)
-    last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
-    FROM_DATE = from_date if from_date else first_day.strftime("%Y-%m-%d")
-    TO_DATE = to_date if to_date else last_day.strftime("%Y-%m-%d")
-else:
-    FROM_DATE, TO_DATE = from_date, to_date
+today = date.today()
+first_day = today.replace(day=1)
+last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+
+# If env variables are empty or None, default to current month
+FROM_DATE = from_date if from_date else first_day.strftime("%Y-%m-%d")
+TO_DATE = to_date if to_date else last_day.strftime("%Y-%m-%d")
 
 print(f"📅 Report period: {FROM_DATE} → {TO_DATE}")
 
