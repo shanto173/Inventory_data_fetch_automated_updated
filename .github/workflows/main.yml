@@ -25,6 +25,10 @@ on:
         required: false
         default: ""
 
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+
 jobs:
   download-and-upload:
     runs-on: ubuntu-latest
@@ -106,6 +110,7 @@ jobs:
         run: python inventory_ageing.py
 
       - name: Run inovice_summary.py
+        if: ${{ github.event.inputs.script_choice == 'inovice_summary.py' }}
         env:
           ODOO_URL: ${{ secrets.ODOO_URL }}
           ODOO_DB: ${{ secrets.ODOO_DB }}
@@ -116,6 +121,7 @@ jobs:
         run: python inovice_summary.py
 
       - name: Run Relese_inovice_summary.py
+        if: ${{ github.event.inputs.script_choice == 'Relese_inovice_summary.py' }}
         env:
           ODOO_URL: ${{ secrets.ODOO_URL }}
           ODOO_DB: ${{ secrets.ODOO_DB }}
