@@ -16,9 +16,6 @@ load_dotenv()
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger()
 
-log = logging.getLogger()
-log.setLevel(logging.INFO)
-
 # ========= CONFIG ==========
 ODOO_URL = os.getenv("ODOO_URL")
 DB = os.getenv("ODOO_DB")
@@ -41,17 +38,34 @@ if not TO_DATE:
 session = requests.Session()
 USER_ID = None
 
+# ========= LABEL MAPPING ==========
+LABELS = {
+    "parent_category": "Product",
+    "product_category": "Category",
+    "product_id": "Item",
+    "lot_id": "Invoice",
+    "receive_date": "Receive Date",
+    "shipment_mode": "Shipment Mode",
+    "slot_1": "0-30",
+    "slot_2": "31-60",
+    "slot_3": "61-90",
+    "slot_4": "91-180",
+    "slot_5": "181-365",
+    "slot_6": "365+",
+    "duration": "Duration",
+    "cloing_qty": "Quantity",
+    "cloing_value": "Value",
+    "landed_cost": "Landed Cost",
+    "lot_price": "Price",
+    "pur_price": "Pur Price",
+    "rejected": "Rejected",
+    "company_id": "Company",
+}
+
 # ========= LOGIN ==========
 def login():
     global USER_ID
-    payload = {
-        "jsonrpc": "2.0",
-        "params": {
-            "db": DB,
-            "login": USERNAME,
-            "password": PASSWORD
-        }
-    }
+    payload = {"jsonrpc": "2.0", "params": {"db": DB, "login": USERNAME, "password": PASSWORD}}
     r = session.post(f"{ODOO_URL}/web/session/authenticate", json=payload)
     r.raise_for_status()
     result = r.json().get("result")
@@ -67,7 +81,6 @@ def login():
 def switch_company(company_id):
     if USER_ID is None:
         raise Exception("User not logged in yet")
-
     payload = {
         "jsonrpc": "2.0",
         "method": "call",
@@ -75,13 +88,8 @@ def switch_company(company_id):
             "model": "res.users",
             "method": "write",
             "args": [[USER_ID], {"company_id": company_id}],
-            "kwargs": {
-                "context": {
-                    "allowed_company_ids": [company_id],
-                    "company_id": company_id
-                }
-            }
-        }
+            "kwargs": {"context": {"allowed_company_ids": [company_id], "company_id": company_id}},
+        },
     }
     r = session.post(f"{ODOO_URL}/web/dataset/call_kw", json=payload)
     r.raise_for_status()
@@ -93,35 +101,40 @@ def switch_company(company_id):
         return True
 
 
-# ========= CREATE FORECAST WIZARD ==========
-def create_forecast_wizard(company_id, from_date, to_date):
+# ========= CREATE AGEING WIZARD ==========
+def create_ageing_wizard(company_id, to_date):
     payload = {
         "jsonrpc": "2.0",
         "method": "call",
         "params": {
             "model": "stock.forecast.report",
-            "method": "create",
-            "args": [{
-                "from_date": from_date,
-                "to_date": to_date,
-            }],
+            "method": "web_save",
+            "args": [[], {"report_type": "ageing", "report_for": "rm", "all_iteam_list": [], "from_date": False, "to_date": to_date}],
             "kwargs": {
-                "context": {
-                    "allowed_company_ids": [company_id],
-                    "company_id": company_id,
-                }
-            }
-        }
+                "context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": USER_ID, "allowed_company_ids": [company_id], "company_id": company_id},
+                "specification": {
+                    "report_type": {},
+                    "report_for": {},
+                    "all_iteam_list": {"fields": {"display_name": {}}},
+                    "from_date": {},
+                    "to_date": {},
+                },
+            },
+        },
     }
-    r = session.post(f"{ODOO_URL}/web/dataset/call_kw", json=payload)
+    r = session.post(f"{ODOO_URL}/web/dataset/call_kw/stock.forecast.report/web_save", json=payload)
     r.raise_for_status()
-    wizard_id = r.json()["result"]
-    print(f"🪄 Created wizard {wizard_id} for company {company_id}")
-    return wizard_id
+    result = r.json().get("result", [])
+    if isinstance(result, list) and result:
+        wiz_id = result[0]["id"]
+        print(f"🪄 Ageing wizard {wiz_id} created for company {company_id}")
+        return wiz_id
+    else:
+        raise Exception(f"❌ Failed to create ageing wizard: {r.text}")
 
 
-# ========= COMPUTE FORECAST ==========
-def compute_forecast(company_id, wizard_id):
+# ========= COMPUTE AGEING ==========
+def compute_ageing(company_id, wizard_id):
     payload = {
         "jsonrpc": "2.0",
         "method": "call",
@@ -129,103 +142,58 @@ def compute_forecast(company_id, wizard_id):
             "model": "stock.forecast.report",
             "method": "print_date_wise_stock_register",
             "args": [[wizard_id]],
-            "kwargs": {
-                "context": {
-                    "lang": "en_US",
-                    "tz": "Asia/Dhaka",
-                    "uid": USER_ID,
-                    "allowed_company_ids": [company_id],
-                    "company_id": company_id
-                }
-            }
-        }
+            "kwargs": {"context": {"lang": "en_US", "tz": "Asia/Dhaka", "uid": USER_ID, "allowed_company_ids": [company_id], "company_id": company_id}},
+        },
     }
     r = session.post(f"{ODOO_URL}/web/dataset/call_button", json=payload)
     r.raise_for_status()
     result = r.json()
     if "error" in result:
-        print(f"❌ Error computing forecast for {company_id}: {result['error']}")
+        print(f"❌ Error computing ageing for {company_id}: {result['error']}")
     else:
-        print(f"⚡ Forecast computed for wizard {wizard_id} (company {company_id})")
+        print(f"⚡ Ageing computed for wizard {wizard_id} (company {company_id})")
     return result
 
 
-# ========= FETCH REPORT ==========
-def fetch_opening_closing(company_id, cname):
-    context = {
-        "allowed_company_ids": [company_id],
-        "company_id": company_id,
-    }
-
+# ========= FETCH AGEING REPORT ==========
+def fetch_ageing(company_id, cname, wizard_id):
+    context = {"allowed_company_ids": [company_id], "company_id": company_id, "active_model": "stock.forecast.report", "active_id": wizard_id, "active_ids": [wizard_id]}
     payload = {
         "jsonrpc": "2.0",
         "method": "call",
         "params": {
-            "model": "stock.opening.closing",
+            "model": "stock.ageing",
             "method": "web_search_read",
             "args": [],
             "kwargs": {
-                "specification": {
-                      "product_category": {"fields": {"display_name": {}}},
-                      "classification_id": {"fields": {"display_name": {}}},
-                      "cloing_qty": {},
-                      "cloing_value": {},
-                      "lot_id": {"fields": {"display_name": {}}},
-                      "issue_qty": {},
-                      "issue_value": {},
-                      "product_id": {"fields": {"display_name": {}}},
-                      "pr_code": {},
-                      "landed_cost": {},
-                      "opening_qty": {},
-                      "opening_value": {},
-                      "po_type": {},
-                      "lot_price": {},
-                      "parent_category": {"fields": {"display_name": {}}},
-                      "pur_price": {},
-                      "receive_date": {},
-                      "receive_qty": {},
-                      "receive_value": {},
-                      "rejected": {},
-                      "shipment_mode": {},
-                      "product_uom": {"fields": {"display_name": {}}},
-                      "partner_id": {"fields": {"display_name": {}}},
-                      "po_number": {},
-                      "product_type": {"fields": {"display_name": {}}},
-                      "item_category": {"fields": {"display_name": {}}},
-                },
+                "specification": {k: ({"fields": {"display_name": {}}} if k.endswith("_id") or k.endswith("_category") else {}) for k in LABELS.keys()},
                 "offset": 0,
                 "limit": 5000,
-                "context": {
-                    **context,
-                    "active_model": "stock.forecast.report",
-                    "active_id": 0,
-                    "active_ids": [0],
-                },
+                "context": context,
                 "count_limit": 10000,
                 "domain": [["product_id.categ_id.complete_name", "ilike", "All / RM"]],
             },
         },
     }
-
     r = session.post(f"{ODOO_URL}/web/dataset/call_kw", json=payload)
     r.raise_for_status()
     try:
         data = r.json()["result"]["records"]
 
-        def flatten_record(record):
+        def flatten(record):
             flat = {}
             for k, v in record.items():
                 if isinstance(v, dict) and "display_name" in v:
-                    flat[k] = v["display_name"]
+                    flat[LABELS.get(k, k)] = v["display_name"]
                 else:
-                    flat[k] = v
+                    flat[LABELS.get(k, k)] = v
             return flat
 
-        flattened = [flatten_record(rec) for rec in data]
-        print(f"📊 {cname}: {len(flattened)} rows fetched (flattened)")
+        flattened = [flatten(rec) for rec in data]
+        print(f"📊 {cname}: {len(flattened)} ageing rows fetched")
         return flattened
     except Exception:
-        print(f"❌ {cname}: Failed to parse report:", r.text[:200])
+        print(f"❌ {cname}: Failed to parse ageing report:", r.text[:200])
         return []
 
 
@@ -236,49 +204,43 @@ if __name__ == "__main__":
 
     for cid, cname in COMPANIES.items():
         if switch_company(cid):
-            wiz_id = create_forecast_wizard(cid, FROM_DATE, TO_DATE)
-            compute_forecast(cid, wiz_id)
-            records = fetch_opening_closing(cid, cname)
+            wiz_id = create_ageing_wizard(cid, TO_DATE)
+            compute_ageing(cid, wiz_id)
+            records = fetch_ageing(cid, cname, wiz_id)
 
             if records:
                 df = pd.DataFrame(records)
-                output_file = f"{cname.lower().replace(' ', '_')}_opening_closing_{today.isoformat()}.xlsx"
+                # Drop first column
+                df = df.iloc[:, 1:]
+                output_file = f"{cname.lower().replace(' ', '_')}_stock_ageing_{today.isoformat()}.xlsx"
                 df.to_excel(output_file, index=False)
                 print(f"📂 Saved: {output_file}")
-                
-                if df.shape[1] > 1:
-                    df = df.iloc[:, 1:]
 
-                # ---------- GOOGLE SHEET PASTING ----------
+                # ========= GOOGLE SHEETS ==========
                 try:
-                    if cname == "Zipper":
-                        creds = service_account.Credentials.from_service_account_file('gcreds.json', scopes=[
-                            "https://www.googleapis.com/auth/spreadsheets",
-                            "https://www.googleapis.com/auth/drive",
-                        ])
-                        client = gspread.authorize(creds)
+                    if cid == 1:  # Zipper
+                        client = gspread.service_account(filename="gcreds.json")
                         sheet = client.open_by_key("1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0")
                         worksheet = sheet.worksheet("age_ZIP")
-
-                    elif cname == "Metal Trims":
-                        creds = service_account.Credentials.from_service_account_file('gcreds.json', scopes=[
-                            "https://www.googleapis.com/auth/spreadsheets",
-                            "https://www.googleapis.com/auth/drive",
-                        ])
+                    elif cid == 3:  # Metal Trims
+                        creds = service_account.Credentials.from_service_account_file("gcreds.json")
                         client = gspread.authorize(creds)
                         sheet = client.open_by_key("1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0")
                         worksheet = sheet.worksheet("age_MT")
+                    else:
+                        worksheet = None
 
-                    if not df.empty:
+                    if worksheet is not None:
                         worksheet.clear()
+                        time.sleep(2)
                         set_with_dataframe(worksheet, df)
-                        local_tz = pytz.timezone('Asia/Dhaka')
+                        local_tz = pytz.timezone("Asia/Dhaka")
                         local_time = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
                         worksheet.update("W2", [[f"{local_time}"]])
-                        log.info(f"✅ Data pasted & timestamp updated: {local_time}")
-                    else:
-                        print("Skip: DataFrame is empty, not pasting to sheet.")
+                        print(f"✅ Data pasted & timestamp updated: {local_time}")
+
                 except Exception as e:
-                    log.error(f"❌ Error while pasting to Google Sheets: {e}")
+                    print(f"❌ Error while pasting to Google Sheets: {e}")
+
             else:
-                print(f"❌ No data fetched for {cname}")
+                print(f"❌ No ageing data fetched for {cname}")
