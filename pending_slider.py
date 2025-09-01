@@ -21,7 +21,7 @@ REPORT_TYPE = "pslc"
 SHEET_ID = "1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc"
 COMPANIES = {
     1: {"name": "Zipper", "sheet": "Zip_Pending_order", "clear_range": "A2:AD", "timestamp_cell": "C1"},
-    3: {"name": "Metal_Trims", "sheet": "MT_Pending_order", "clear_range": "A2:AD", "timestamp_cell": "AQ2"},
+    3: {"name": "Metal_Trims", "sheet": "MT_Pending_order", "clear_range": "A2:AD", "timestamp_cell": "C1"},
 }
 
 # ========= DATE HANDLING ==========
