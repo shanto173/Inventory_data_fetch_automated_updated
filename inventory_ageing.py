@@ -245,6 +245,9 @@ if __name__ == "__main__":
                 output_file = f"{cname.lower().replace(' ', '_')}_opening_closing_{today.isoformat()}.xlsx"
                 df.to_excel(output_file, index=False)
                 print(f"📂 Saved: {output_file}")
+                
+                if df.shape[1] > 1:
+                    df = df.iloc[:, 1:]
 
                 # ---------- GOOGLE SHEET PASTING ----------
                 try:
@@ -268,7 +271,6 @@ if __name__ == "__main__":
 
                     if not df.empty:
                         worksheet.clear()
-                        time.sleep(2)
                         set_with_dataframe(worksheet, df)
                         local_tz = pytz.timezone('Asia/Dhaka')
                         local_time = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
