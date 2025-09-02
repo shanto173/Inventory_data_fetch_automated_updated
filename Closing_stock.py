@@ -246,7 +246,7 @@ def paste_downloaded_file_to_gsheet(company_name, sheet_key, worksheet_name):
         if df.empty:
             log.warning(f"⚠️ DataFrame for {company_name} is empty. Skipping paste.")
             return
-        df = df.fillna("")
+        df = df.where(pd.notnull(df), "") 
         worksheet.clear()
         time.sleep(2)
         set_with_dataframe(worksheet, df)
