@@ -68,8 +68,8 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}" | base64 --decode > gcreds.json
 
-      - name: Run selected scripts
-        run: |
+            - name: Run selected scripts
+      - run: |
           # List all scripts
           ALL_SCRIPTS=(
             "Closing_stock.py"
@@ -82,6 +82,9 @@ jobs:
 
           # Determine scripts to run
           INPUT="${{ github.event.inputs.script_choice }}"
+          if [ -z "$INPUT" ]; then
+            INPUT="All"
+          fi
           if [ "$INPUT" == "All" ]; then
             SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
           else
