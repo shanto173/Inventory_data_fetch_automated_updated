@@ -197,7 +197,7 @@ for company_id, cname in COMPANIES.items():
                     print("Skip: DataFrame empty, not pasting to sheet.")
                 else:
                     df = df.fillna("")
-                    ws.clear()
+                    ws.batch_clear(["A:AB"])
                     set_with_dataframe(ws, df)
                     timestamp = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
                     ws.update("AC2", [[timestamp]])
