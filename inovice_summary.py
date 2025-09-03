@@ -185,17 +185,14 @@ for company_id, cname in COMPANIES.items():
             print(f"✅ Report downloaded for {cname}: {filename}")
 
             # === Load file and paste to Google Sheets ===
-            df_sheet1 = pd.read_excel(filename, sheet_name=0)
-            df_sheet2 = pd.read_excel(filename, sheet_name=1)
-
+            df_sheet1 = pd.read_excel(filename)
+            
             if company_id == 1:  # Zipper Sheets
                 sheet1 = client.open_by_key("1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc").worksheet("Production Data")
-                sheet2 = client.open_by_key("1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc").worksheet("Production Data value")
             else:  # Metal Trims Sheets
                 sheet1 = client.open_by_key("1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc").worksheet("MT_Production_QTY")
-                sheet2 = client.open_by_key("1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc").worksheet("MT_Production_Value")
 
-            for df, ws in zip([df_sheet1, df_sheet2], [sheet1, sheet2]):
+            for df, ws in zip([df_sheet1], [sheet1]):
                 if df.empty:
                     print("Skip: DataFrame empty, not pasting to sheet.")
                 else:
