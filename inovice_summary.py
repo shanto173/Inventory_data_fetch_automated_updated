@@ -25,7 +25,7 @@ PASSWORD = os.getenv("ODOO_PASSWORD")
 
 MODEL = "mrp.report.custom"
 REPORT_BUTTON_METHOD = "action_generate_xlsx_report"
-REPORT_TYPE = "s_invs"
+REPORT_TYPE = "invs"
 
 # Default date range: first-to-last of current month
 today = date.today()
