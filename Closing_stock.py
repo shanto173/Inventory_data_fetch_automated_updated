@@ -247,7 +247,7 @@ def paste_downloaded_file_to_gsheet(company_name, sheet_key, worksheet_name):
             log.warning(f"⚠️ DataFrame for {company_name} is empty. Skipping paste.")
             return
         df = df.replace(False, "") 
-        worksheet.clear()
+        worksheet.batch_clear(["A:AA"])
         time.sleep(2)
         set_with_dataframe(worksheet, df)
         log.info(f"✅ Data pasted into Google Sheet ({worksheet_name}) for {company_name}")
