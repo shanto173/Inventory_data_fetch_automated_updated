@@ -16,6 +16,7 @@ on:
           - inventory_ageing.py
           - inovice_summary.py
           - Relese_inovice_summary.py
+          - Consumption_stock_mar24_till.py
 
 
       from_date:
@@ -78,6 +79,7 @@ jobs:
             "inventory_ageing.py"
             "inovice_summary.py"
             "Relese_inovice_summary.py"
+            "Consumption_stock_mar24_till.py"
           )
 
           # Determine scripts to run
