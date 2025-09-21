@@ -36,7 +36,7 @@ SHEET_INFO = {
     },
     "metal_trims": {
         "sheet_id": "1IQYlbXq0vgqK553t1HB1adlqMipZeVWod8b99QzuMoc",
-        "worksheet_name": "MT_purchase_uti_dataonsm_mt"
+        "worksheet_name": "MT_purchase_uti_data"
     }
 }
 
