@@ -1,109 +1,109 @@
-# name: Odoo Stock Report Automation
+name: Odoo Stock Report Automation
 
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       script_choice:
-#         description: "Which script(s) to run? Select single or 'All'."
-#         required: true
-#         default: "Closing_stock.py"
-#         type: choice
-#         options:
-#           - All
-#           - Closing_stock.py
-#           - Raw_materials.py
-#           - pending_slider.py
-#           - inventory_ageing.py
-#           - inovice_summary.py
-#           - Relese_inovice_summary.py
-#           - Consumption_stock_mar24_till.py
-#           - Consumption_stock_Apr24_till.py
+on:
+  workflow_dispatch:
+    inputs:
+      script_choice:
+        description: "Which script(s) to run? Select single or 'All'."
+        required: true
+        default: "Closing_stock.py"
+        type: choice
+        options:
+          - All
+          - Closing_stock.py
+          - Raw_materials.py
+          - pending_slider.py
+          - inventory_ageing.py
+          - inovice_summary.py
+          - Relese_inovice_summary.py
+          - Consumption_stock_mar24_till.py
+          - Consumption_stock_Apr24_till.py
 
 
-#       from_date:
-#         description: "Start date (YYYY-MM-DD). Optional."
-#         required: false
-#         default: ""
-#       to_date:
-#         description: "End date (YYYY-MM-DD). Optional."
-#         required: false
-#         default: ""
+      from_date:
+        description: "Start date (YYYY-MM-DD). Optional."
+        required: false
+        default: ""
+      to_date:
+        description: "End date (YYYY-MM-DD). Optional."
+        required: false
+        default: ""
 
-#   schedule:
-#     # Run every 30 minutes automatically
-#     - cron: '*/30 * * * *'
+  schedule:
+    # Run every 30 minutes automatically
+    - cron: '*/30 * * * *'
 
-# jobs:
-#   download-and-upload:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3
+jobs:
+  download-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-#       - name: Set up Python
-#         uses: actions/setup-python@v4
-#         with:
-#           python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-#       - name: Install Python modules
-#         run: |
-#           python -m pip install --upgrade pip
-#           pip install requests pandas gspread gspread-dataframe google-auth google-auth-oauthlib google-auth-httplib2 selenium webdriver-manager openpyxl pytz python-dotenv
+      - name: Install Python modules
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas gspread gspread-dataframe google-auth google-auth-oauthlib google-auth-httplib2 selenium webdriver-manager openpyxl pytz python-dotenv
 
-#       - name: Set environment variables (dates)
-#         run: |
-#           # FROM_DATE fallback
-#           if [ -z "${{ github.event.inputs.from_date }}" ]; then
-#             echo "FROM_DATE=" >> $GITHUB_ENV
-#           else
-#             echo "FROM_DATE=${{ github.event.inputs.from_date }}" >> $GITHUB_ENV
-#           fi
+      - name: Set environment variables (dates)
+        run: |
+          # FROM_DATE fallback
+          if [ -z "${{ github.event.inputs.from_date }}" ]; then
+            echo "FROM_DATE=" >> $GITHUB_ENV
+          else
+            echo "FROM_DATE=${{ github.event.inputs.from_date }}" >> $GITHUB_ENV
+          fi
 
-#           # TO_DATE fallback to today
-#           if [ -z "${{ github.event.inputs.to_date }}" ]; then
-#             echo "TO_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-#           else
-#             echo "TO_DATE=${{ github.event.inputs.to_date }}" >> $GITHUB_ENV
-#           fi
+          # TO_DATE fallback to today
+          if [ -z "${{ github.event.inputs.to_date }}" ]; then
+            echo "TO_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          else
+            echo "TO_DATE=${{ github.event.inputs.to_date }}" >> $GITHUB_ENV
+          fi
 
-#       - name: Decode Google credentials
-#         run: |
-#           echo "${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}" | base64 --decode > gcreds.json
+      - name: Decode Google credentials
+        run: |
+          echo "${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}" | base64 --decode > gcreds.json
 
-#       - name: Run selected scripts
-#         run: |
-#           # List all scripts
-#           ALL_SCRIPTS=(
-#             "Closing_stock.py"
-#             "Raw_materials.py"
-#             "pending_slider.py"
-#             "inventory_ageing.py"
-#             "inovice_summary.py"
-#             "Relese_inovice_summary.py"
-#             "Consumption_stock_mar24_till.py"
-#             "Consumption_stock_Apr24_till.py"
-#           )
+      - name: Run selected scripts
+        run: |
+          # List all scripts
+          ALL_SCRIPTS=(
+            "Closing_stock.py"
+            "Raw_materials.py"
+            "pending_slider.py"
+            "inventory_ageing.py"
+            "inovice_summary.py"
+            "Relese_inovice_summary.py"
+            "Consumption_stock_mar24_till.py"
+            "Consumption_stock_Apr24_till.py"
+          )
 
-#           # Determine scripts to run
-#           INPUT="${{ github.event.inputs.script_choice }}"
-#           if [ -z "$INPUT" ]; then
-#             INPUT="All"
-#           fi
-#           if [ "$INPUT" == "All" ]; then
-#             SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
-#           else
-#             SCRIPTS_TO_RUN=("$INPUT")
-#           fi
+          # Determine scripts to run
+          INPUT="${{ github.event.inputs.script_choice }}"
+          if [ -z "$INPUT" ]; then
+            INPUT="All"
+          fi
+          if [ "$INPUT" == "All" ]; then
+            SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
+          else
+            SCRIPTS_TO_RUN=("$INPUT")
+          fi
 
-#           # Execute each script
-#           for SCRIPT in "${SCRIPTS_TO_RUN[@]}"; do
-#             echo "▶ Running $SCRIPT..."
-#             python "$SCRIPT"
-#           done
-#         env:
-#           ODOO_URL: ${{ secrets.ODOO_URL }}
-#           ODOO_DB: ${{ secrets.ODOO_DB }}
-#           ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
-#           ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
-#           FROM_DATE: ${{ env.FROM_DATE }}
-#           TO_DATE: ${{ env.TO_DATE }}
+          # Execute each script
+          for SCRIPT in "${SCRIPTS_TO_RUN[@]}"; do
+            echo "▶ Running $SCRIPT..."
+            python "$SCRIPT"
+          done
+        env:
+          ODOO_URL: ${{ secrets.ODOO_URL }}
+          ODOO_DB: ${{ secrets.ODOO_DB }}
+          ODOO_USERNAME: ${{ secrets.ODOO_USERNAME }}
+          ODOO_PASSWORD: ${{ secrets.ODOO_PASSWORD }}
+          FROM_DATE: ${{ env.FROM_DATE }}
+          TO_DATE: ${{ env.TO_DATE }}
