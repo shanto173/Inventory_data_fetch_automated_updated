@@ -4,7 +4,7 @@ import re
 import logging
 import sys
 import os
-from datetime import date, datetime
+from datetime import date, datetime,timedelta
 import gspread
 from gspread_dataframe import set_with_dataframe
 from google.oauth2 import service_account
@@ -34,9 +34,19 @@ FROM_DATE = os.getenv("FROM_DATE")  # from GitHub Actions
 TO_DATE = os.getenv("TO_DATE")      # from GitHub Actions
 
 if not TO_DATE:
-    TO_DATE = today.isoformat()
+    first_day_this_month = today.replace(day=1)
+    if today.day in (1):
+        # If it's the 1st or 2nd, set TO_DATE as last day of previous month
+        last_day_prev_month = first_day_this_month - timedelta(days=1)
+        TO_DATE = last_day_prev_month.isoformat()
+    else:
+        # Otherwise, set TO_DATE as today
+        TO_DATE = today.isoformat()
+
 if not FROM_DATE:
     FROM_DATE = False  # keep False if wizard supports it
+
+print("To date: ",TO_DATE)
 
 session = requests.Session()
 USER_ID = None
