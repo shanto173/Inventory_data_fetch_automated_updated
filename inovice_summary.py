@@ -192,8 +192,8 @@ for company_id, cname in COMPANIES.items():
     headers = {"X-CSRF-Token": csrf_token, "Referer": f"{ODOO_URL}/web"}
     
     success = False
-    
-    for attempt in range(1, 11):  # max 10 tries
+
+    for attempt in range(1, 11):  # max 10 tries per company
         try:
             print(f"Attempt {attempt}/10 downloading report for {cname}...")
             resp = session.post(download_url, data=download_payload, headers=headers, timeout=60)
@@ -222,12 +222,14 @@ for company_id, cname in COMPANIES.items():
                         ws.update("AC2", [[timestamp]])
                         print(f"Data pasted to {ws.title} with timestamp {timestamp}")
 
+                success = True
+                break  # stop retry loop since download succeeded
             else:
                 print(f"❌ Failed to download report for {cname}, status={resp.status_code}")
         except Exception as e:
             print(f"❌ Exception during download/paste for {cname}: {e}")
-            
+
         time.sleep(5)  # wait before retry
 
-        if not success:
-            print(f"❌ Giving up after 10 attempts for {cname}")
+    if not success:
+        print(f"❌ Giving up after 10 attempts for {cname}")

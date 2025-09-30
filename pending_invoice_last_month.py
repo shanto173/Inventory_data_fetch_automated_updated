@@ -228,6 +228,8 @@ for company_id, cname in COMPANIES.items():
                         timestamp = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
                         ws.update("AC2", [[timestamp]])
                         print(f"Data pasted to {ws.title} with timestamp {timestamp}")
+                success = True
+                break  # stop retry loop since download succeeded
 
             else:
                 print(f"❌ Failed to download report for {cname}, status={resp.status_code}")
