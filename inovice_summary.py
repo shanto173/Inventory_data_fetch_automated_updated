@@ -4,7 +4,7 @@ import re
 import logging
 import sys
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import gspread
 from gspread_dataframe import set_with_dataframe
 from google.oauth2 import service_account
@@ -32,8 +32,23 @@ today = date.today()
 from_date_env = os.getenv("FROM_DATE", "").strip()
 to_date_env = os.getenv("TO_DATE", "").strip()
 
-FROM_DATE = from_date_env if from_date_env else today.replace(day=1).isoformat()
-TO_DATE = to_date_env if to_date_env else today.isoformat()
+# Calculate the first day of the current month
+first_day_this_month = today.replace(day=1)
+
+if today.day in (1, 2):
+    # Get last day of previous month
+    last_day_prev_month = first_day_this_month - timedelta(days=1)
+    from_date = last_day_prev_month.replace(day=1)  # 1st of previous month
+    to_date = last_day_prev_month                   # last day of previous month
+else:
+    from_date = first_day_this_month
+    to_date = today
+
+FROM_DATE = from_date.isoformat()
+TO_DATE = to_date.isoformat()
+
+print("FROM_DATE:", FROM_DATE)
+print("TO_DATE:", TO_DATE)
 
 log.info(f"Using FROM_DATE={FROM_DATE}, TO_DATE={TO_DATE}")
 
@@ -175,35 +190,44 @@ for company_id, cname in COMPANIES.items():
 
     download_url = f"{ODOO_URL}/report/download"
     headers = {"X-CSRF-Token": csrf_token, "Referer": f"{ODOO_URL}/web"}
+    
+    success = False
+    
+    for attempt in range(1, 11):  # max 10 tries
+        try:
+            print(f"Attempt {attempt}/10 downloading report for {cname}...")
+            resp = session.post(download_url, data=download_payload, headers=headers, timeout=60)
+            if resp.status_code == 200 and "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in resp.headers.get("content-type", ""):
+                filename = Path(download_dir) / f"{cname.replace(' ', '_')}_{REPORT_TYPE}_{FROM_DATE}_to_{TO_DATE}.xlsx"
+                with open(filename, "wb") as f:
+                    f.write(resp.content)
+                print(f"✅ Report downloaded for {cname}: {filename}")
 
-    try:
-        resp = session.post(download_url, data=download_payload, headers=headers, timeout=60)
-        if resp.status_code == 200 and "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in resp.headers.get("content-type", ""):
-            filename = Path(download_dir) / f"{cname.replace(' ', '_')}_{REPORT_TYPE}_{FROM_DATE}_to_{TO_DATE}.xlsx"
-            with open(filename, "wb") as f:
-                f.write(resp.content)
-            print(f"✅ Report downloaded for {cname}: {filename}")
+                # === Load file and paste to Google Sheets ===
+                df_sheet1 = pd.read_excel(filename)
+                
+                if company_id == 1:  # Zipper Sheets
+                    sheet1 = client.open_by_key("1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc").worksheet("Production Data")
+                else:  # Metal Trims Sheets
+                    sheet1 = client.open_by_key("1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc").worksheet("MT_Production_QTY")
 
-            # === Load file and paste to Google Sheets ===
-            df_sheet1 = pd.read_excel(filename)
+                for df, ws in zip([df_sheet1], [sheet1]):
+                    if df.empty:
+                        print("Skip: DataFrame empty, not pasting to sheet.")
+                    else:
+                        df = df.fillna("")
+                        ws.batch_clear(["A:AB"])
+                        set_with_dataframe(ws, df)
+                        timestamp = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
+                        ws.update("AC2", [[timestamp]])
+                        print(f"Data pasted to {ws.title} with timestamp {timestamp}")
+
+            else:
+                print(f"❌ Failed to download report for {cname}, status={resp.status_code}")
+        except Exception as e:
+            print(f"❌ Exception during download/paste for {cname}: {e}")
             
-            if company_id == 1:  # Zipper Sheets
-                sheet1 = client.open_by_key("1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc").worksheet("Production Data")
-            else:  # Metal Trims Sheets
-                sheet1 = client.open_by_key("1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc").worksheet("MT_Production_QTY")
+        time.sleep(5)  # wait before retry
 
-            for df, ws in zip([df_sheet1], [sheet1]):
-                if df.empty:
-                    print("Skip: DataFrame empty, not pasting to sheet.")
-                else:
-                    df = df.fillna("")
-                    ws.batch_clear(["A:AB"])
-                    set_with_dataframe(ws, df)
-                    timestamp = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
-                    ws.update("AC2", [[timestamp]])
-                    print(f"Data pasted to {ws.title} with timestamp {timestamp}")
-
-        else:
-            print(f"❌ Failed to download report for {cname}, status={resp.status_code}")
-    except Exception as e:
-        print(f"❌ Exception during download/paste for {cname}: {e}")
+        if not success:
+            print(f"❌ Giving up after 10 attempts for {cname}")
