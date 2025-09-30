@@ -19,6 +19,7 @@ on:
           - Consumption_stock_mar24_till.py
           - Consumption_stock_Apr24_till.py
           - Sep_inovice_summary.py
+          - pending_invoice_last_month.py
 
 
       from_date:
@@ -84,6 +85,7 @@ jobs:
             "Consumption_stock_mar24_till.py"
             "Consumption_stock_Apr24_till.py"
             "Sep_inovice_summary.py"
+            "pending_invoice_last_month.py"
           )
 
           # Determine scripts to run
