@@ -23,7 +23,12 @@ on:
           - Custom Multi-Select
 
       custom_scripts:
-        description: "If 'Custom Multi-Select' is chosen, list scripts separated by commas (e.g., Closing_stock.py, Raw_materials.py)"
+        description: |
+          If 'Custom Multi-Select' is chosen, enter multiple script names separated by commas.
+          ✅ Available options:
+          Closing_stock.py, Raw_materials.py, pending_slider.py, inventory_ageing.py,
+          inovice_summary.py, Relese_inovice_summary.py, Consumption_stock_mar24_till.py,
+          Consumption_stock_Apr24_till.py, Sep_inovice_summary.py, pending_invoice_last_month.py
         required: false
         default: ""
 
@@ -42,6 +47,7 @@ on:
 jobs:
   download-and-upload:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -95,15 +101,34 @@ jobs:
           if [ "$INPUT" == "All" ]; then
             SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
           elif [ "$INPUT" == "Custom Multi-Select" ] && [ -n "$CUSTOM" ]; then
-            IFS=',' read -r -a SCRIPTS_TO_RUN <<< "$CUSTOM"
+            IFS=',' read -r -a RAW_SCRIPTS <<< "$CUSTOM"
+
+            echo "🔍 Validating custom script names..."
+            SCRIPTS_TO_RUN=()
+            for FILE in "${RAW_SCRIPTS[@]}"; do
+              TRIMMED=$(echo "$FILE" | xargs)
+              if [[ " ${ALL_SCRIPTS[*]} " == *" $TRIMMED "* ]]; then
+                echo "✅ Valid script: $TRIMMED"
+                SCRIPTS_TO_RUN+=("$TRIMMED")
+              else
+                echo "⚠️ Skipping invalid script: $TRIMMED"
+              fi
+            done
+
+            if [ ${#SCRIPTS_TO_RUN[@]} -eq 0 ]; then
+              echo "❌ No valid scripts found in input. Exiting..."
+              exit 1
+            fi
           else
             SCRIPTS_TO_RUN=("$INPUT")
           fi
 
+          echo "▶ Running selected scripts..."
           for SCRIPT in "${SCRIPTS_TO_RUN[@]}"; do
-            SCRIPT_TRIMMED=$(echo "$SCRIPT" | xargs)
-            echo "▶ Running $SCRIPT_TRIMMED..."
-            python "$SCRIPT_TRIMMED"
+            echo "----------------------------------"
+            echo "▶ Executing: $SCRIPT"
+            echo "----------------------------------"
+            python "$SCRIPT"
           done
         env:
           ODOO_URL: ${{ secrets.ODOO_URL }}
