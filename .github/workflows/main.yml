@@ -4,11 +4,28 @@ on:
   workflow_dispatch:
     inputs:
       script_choice:
-        description: "Which script(s) to run? You can select 'All' or enter multiple scripts separated by commas."
+        description: "Select which script(s) to run (or choose 'Custom Multi-Select')."
         required: true
         default: "Closing_stock.py"
-        type: string
-        # Example usage: All OR Closing_stock.py,Raw_materials.py,inventory_ageing.py
+        type: choice
+        options:
+          - All
+          - Closing_stock.py
+          - Raw_materials.py
+          - pending_slider.py
+          - inventory_ageing.py
+          - inovice_summary.py
+          - Relese_inovice_summary.py
+          - Consumption_stock_mar24_till.py
+          - Consumption_stock_Apr24_till.py
+          - Sep_inovice_summary.py
+          - pending_invoice_last_month.py
+          - Custom Multi-Select
+
+      custom_scripts:
+        description: "If 'Custom Multi-Select' is chosen, list scripts separated by commas (e.g., Closing_stock.py, Raw_materials.py)"
+        required: false
+        default: ""
 
       from_date:
         description: "Start date (YYYY-MM-DD). Optional."
@@ -73,15 +90,14 @@ jobs:
           )
 
           INPUT="${{ github.event.inputs.script_choice }}"
-          if [ -z "$INPUT" ]; then
-            INPUT="All"
-          fi
+          CUSTOM="${{ github.event.inputs.custom_scripts }}"
 
           if [ "$INPUT" == "All" ]; then
             SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
+          elif [ "$INPUT" == "Custom Multi-Select" ] && [ -n "$CUSTOM" ]; then
+            IFS=',' read -r -a SCRIPTS_TO_RUN <<< "$CUSTOM"
           else
-            # Split comma-separated list into array
-            IFS=',' read -r -a SCRIPTS_TO_RUN <<< "$INPUT"
+            SCRIPTS_TO_RUN=("$INPUT")
           fi
 
           for SCRIPT in "${SCRIPTS_TO_RUN[@]}"; do
