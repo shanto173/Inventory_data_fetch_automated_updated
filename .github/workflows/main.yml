@@ -3,46 +3,50 @@ name: Odoo Stock Report Automation
 on:
   workflow_dispatch:
     inputs:
-      script_choice:
-        description: "Select which script(s) to run (or choose 'Custom Multi-Select')."
-        required: true
-        default: "Closing_stock.py"
-        type: choice
-        options:
-          - All
-          - Closing_stock.py
-          - Raw_materials.py
-          - pending_slider.py
-          - inventory_ageing.py
-          - inovice_summary.py
-          - Relese_inovice_summary.py
-          - Consumption_stock_mar24_till.py
-          - Consumption_stock_Apr24_till.py
-          - Sep_inovice_summary.py
-          - pending_invoice_last_month.py
-          - Custom Multi-Select
-
-      custom_scripts:
-        description: |
-          If 'Custom Multi-Select' is chosen, enter multiple script names separated by commas.
-          ✅ Available options:
-          Closing_stock.py, Raw_materials.py, pending_slider.py, inventory_ageing.py,
-          inovice_summary.py, Relese_inovice_summary.py, Consumption_stock_mar24_till.py,
-          Consumption_stock_Apr24_till.py, Sep_inovice_summary.py, pending_invoice_last_month.py
-        required: false
-        default: ""
-
-      from_date:
-        description: "Start date (YYYY-MM-DD). Optional."
-        required: false
-        default: ""
-      to_date:
-        description: "End date (YYYY-MM-DD). Optional."
-        required: false
-        default: ""
-
-  schedule:
-    - cron: '*/30 * * * *'
+      run_Closing_stock:
+        description: 'Run Closing_stock.py'
+        type: boolean
+        default: false
+      run_Raw_materials:
+        description: 'Run Raw_materials.py'
+        type: boolean
+        default: false
+      run_pending_slider:
+        description: 'Run pending_slider.py'
+        type: boolean
+        default: false
+      run_inventory_ageing:
+        description: 'Run inventory_ageing.py'
+        type: boolean
+        default: false
+      run_inovice_summary:
+        description: 'Run inovice_summary.py'
+        type: boolean
+        default: false
+      run_Relese_inovice_summary:
+        description: 'Run Relese_inovice_summary.py'
+        type: boolean
+        default: false
+      run_Consumption_stock_mar24_till:
+        description: 'Run Consumption_stock_mar24_till.py'
+        type: boolean
+        default: false
+      run_Consumption_stock_Apr24_till:
+        description: 'Run Consumption_stock_Apr24_till.py'
+        type: boolean
+        default: false
+      run_Sep_inovice_summary:
+        description: 'Run Sep_inovice_summary.py'
+        type: boolean
+        default: false
+      run_pending_invoice_last_month:
+        description: 'Run pending_invoice_last_month.py'
+        type: boolean
+        default: false
+      run_all:
+        description: 'Run ALL scripts (overrides individual toggles)'
+        type: boolean
+        default: false
 
 jobs:
   download-and-upload:
@@ -62,26 +66,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests pandas gspread gspread-dataframe google-auth google-auth-oauthlib google-auth-httplib2 selenium webdriver-manager openpyxl pytz python-dotenv
 
-      - name: Set environment variables (dates)
-        run: |
-          if [ -z "${{ github.event.inputs.from_date }}" ]; then
-            echo "FROM_DATE=" >> $GITHUB_ENV
-          else
-            echo "FROM_DATE=${{ github.event.inputs.from_date }}" >> $GITHUB_ENV
-          fi
-
-          if [ -z "${{ github.event.inputs.to_date }}" ]; then
-            echo "TO_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-          else
-            echo "TO_DATE=${{ github.event.inputs.to_date }}" >> $GITHUB_ENV
-          fi
-
       - name: Decode Google credentials
         run: |
           echo "${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}" | base64 --decode > gcreds.json
 
       - name: Run selected scripts
         run: |
+          # Define all scripts
           ALL_SCRIPTS=(
             "Closing_stock.py"
             "Raw_materials.py"
@@ -95,39 +86,27 @@ jobs:
             "pending_invoice_last_month.py"
           )
 
-          INPUT="${{ github.event.inputs.script_choice }}"
-          CUSTOM="${{ github.event.inputs.custom_scripts }}"
+          # Prepare array of scripts to run
+          SCRIPTS_TO_RUN=()
 
-          if [ "$INPUT" == "All" ]; then
+          if [ "${{ github.event.inputs.run_all }}" == "true" ]; then
             SCRIPTS_TO_RUN=("${ALL_SCRIPTS[@]}")
-          elif [ "$INPUT" == "Custom Multi-Select" ] && [ -n "$CUSTOM" ]; then
-            IFS=',' read -r -a RAW_SCRIPTS <<< "$CUSTOM"
-
-            echo "🔍 Validating custom script names..."
-            SCRIPTS_TO_RUN=()
-            for FILE in "${RAW_SCRIPTS[@]}"; do
-              TRIMMED=$(echo "$FILE" | xargs)
-              if [[ " ${ALL_SCRIPTS[*]} " == *" $TRIMMED "* ]]; then
-                echo "✅ Valid script: $TRIMMED"
-                SCRIPTS_TO_RUN+=("$TRIMMED")
-              else
-                echo "⚠️ Skipping invalid script: $TRIMMED"
-              fi
-            done
-
-            if [ ${#SCRIPTS_TO_RUN[@]} -eq 0 ]; then
-              echo "❌ No valid scripts found in input. Exiting..."
-              exit 1
-            fi
           else
-            SCRIPTS_TO_RUN=("$INPUT")
+            [ "${{ github.event.inputs.run_Closing_stock }}" == "true" ] && SCRIPTS_TO_RUN+=("Closing_stock.py")
+            [ "${{ github.event.inputs.run_Raw_materials }}" == "true" ] && SCRIPTS_TO_RUN+=("Raw_materials.py")
+            [ "${{ github.event.inputs.run_pending_slider }}" == "true" ] && SCRIPTS_TO_RUN+=("pending_slider.py")
+            [ "${{ github.event.inputs.run_inventory_ageing }}" == "true" ] && SCRIPTS_TO_RUN+=("inventory_ageing.py")
+            [ "${{ github.event.inputs.run_inovice_summary }}" == "true" ] && SCRIPTS_TO_RUN+=("inovice_summary.py")
+            [ "${{ github.event.inputs.run_Relese_inovice_summary }}" == "true" ] && SCRIPTS_TO_RUN+=("Relese_inovice_summary.py")
+            [ "${{ github.event.inputs.run_Consumption_stock_mar24_till }}" == "true" ] && SCRIPTS_TO_RUN+=("Consumption_stock_mar24_till.py")
+            [ "${{ github.event.inputs.run_Consumption_stock_Apr24_till }}" == "true" ] && SCRIPTS_TO_RUN+=("Consumption_stock_Apr24_till.py")
+            [ "${{ github.event.inputs.run_Sep_inovice_summary }}" == "true" ] && SCRIPTS_TO_RUN+=("Sep_inovice_summary.py")
+            [ "${{ github.event.inputs.run_pending_invoice_last_month }}" == "true" ] && SCRIPTS_TO_RUN+=("pending_invoice_last_month.py")
           fi
 
-          echo "▶ Running selected scripts..."
+          # Run each selected script
           for SCRIPT in "${SCRIPTS_TO_RUN[@]}"; do
-            echo "----------------------------------"
-            echo "▶ Executing: $SCRIPT"
-            echo "----------------------------------"
+            echo "▶ Running $SCRIPT..."
             python "$SCRIPT"
           done
         env:
