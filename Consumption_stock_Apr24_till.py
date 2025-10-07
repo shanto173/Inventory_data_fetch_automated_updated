@@ -31,11 +31,11 @@ COMPANIES = {
 
 SHEET_INFO = {
     "zipper": {
-        "sheet_id": "1IQYlbXq0vgqK553t1HB1adlqMipZeVWod8b99QzuMoc",
+        "sheet_id": "19RGOr3zbDsZQfYbL97SqouV0RaEl9TFMqrw8-HBos8U",
         "worksheet_name": "Zip_purchase_uti_data"
     },
     "metal_trims": {
-        "sheet_id": "1IQYlbXq0vgqK553t1HB1adlqMipZeVWod8b99QzuMoc",
+        "sheet_id": "19RGOr3zbDsZQfYbL97SqouV0RaEl9TFMqrw8-HBos8U",
         "worksheet_name": "MT_purchase_uti_data"
     }
 }
@@ -254,7 +254,7 @@ def paste_downloaded_file_to_gsheet(company_name, sheet_key, worksheet_name):
         
         local_tz = pytz.timezone('Asia/Dhaka')
         local_time = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
-        worksheet.update("Z2", [[f"{local_time}"]])
+        worksheet.update("AE1", [[f"{local_time}"]])
         log.info(f"✅ Timestamp updated: {local_time}")
         
     except Exception as e:
