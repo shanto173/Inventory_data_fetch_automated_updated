@@ -125,7 +125,7 @@ def fetch_fg_store_datas(company_id, cname, from_date, to_date):
         "params": {
             "model": "operation.details",
             "method": "retrieve_fg_store_datas",
-            "args": [[company_id], from_date, to_date, "oa"],
+            "args": [[company_id], from_date, to_date],
             "kwargs": {"context": context}
         }
     }
