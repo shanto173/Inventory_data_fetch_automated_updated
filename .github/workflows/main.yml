@@ -14,6 +14,7 @@ on:
           - Raw_materials.py
           - pending_slider.py
           - inventory_ageing.py
+          - inventory_ageing_1.py
           - inovice_summary.py
           - Relese_inovice_summary.py
           - Consumption_stock_mar24_till.py
