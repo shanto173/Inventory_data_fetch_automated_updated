@@ -30,22 +30,23 @@ COMPANIES = {
 from datetime import date, timedelta
 import os
 
-# Today
 today = date.today()
 
-# FROM_DATE: optional
-FROM_DATE = os.getenv("FROM_DATE")
-if not FROM_DATE or FROM_DATE.strip() == "":
-    FROM_DATE = ""  # let Odoo handle it
+# ========= GITHUB ENV ==========
+FROM_DATE = os.getenv("FROM_DATE")  # from GitHub Actions
+TO_DATE = os.getenv("TO_DATE")      # from GitHub Actions
 
-# TO_DATE: always last day of previous month
+# Always set TO_DATE as last day of previous month, ignoring env if set
 first_day_this_month = today.replace(day=1)
 last_day_prev_month = first_day_this_month - timedelta(days=1)
-TO_DATE = last_day_prev_month.strftime("%Y-%m-%d")
+TO_DATE = last_day_prev_month.isoformat()
+
+# FROM_DATE can be kept False if wizard supports it
+if not FROM_DATE:
+    FROM_DATE = False
 
 print("From date:", FROM_DATE)
-print("To date (always last day of prev month):", TO_DATE)
-
+print("To date (always last day of prev month):", TO_DATE) 
 session = requests.Session()
 USER_ID = None
 
@@ -227,7 +228,7 @@ if __name__ == "__main__":
                 df = pd.DataFrame(records)
                 # Drop first column
                 df = df.iloc[:, 1:]
-                output_file = f"{cname.lower().replace(' ', '_')}_stock_ageing_{today.isoformat()}.xlsx"
+                output_file = f"{cname.lower().replace(' ', '_')}_stock_ageing_{TO_DATE}.xlsx"
                 df.to_excel(output_file, index=False)
                 print(f"📂 Saved: {output_file}")
 
@@ -249,7 +250,7 @@ if __name__ == "__main__":
                         set_with_dataframe(worksheet, df)
                         local_tz = pytz.timezone("Asia/Dhaka")
                         local_time = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
-                        worksheet.update("W2", [[f"{local_time}"]])
+                        worksheet.update([[f"{local_time}"]], "W2")
                         print(f"✅ Data pasted & timestamp updated: {local_time}")
 
                 except Exception as e:
