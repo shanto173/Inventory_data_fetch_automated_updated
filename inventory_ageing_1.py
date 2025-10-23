@@ -27,24 +27,26 @@ COMPANIES = {
     3: "Metal Trims",
 }
 
+from datetime import date, timedelta
+import os
+
 today = date.today()
 
 # ========= GITHUB ENV ==========
 FROM_DATE = os.getenv("FROM_DATE")  # from GitHub Actions
 TO_DATE = os.getenv("TO_DATE")      # from GitHub Actions
 
-# Always set TO_DATE as last day of previous month
-if not TO_DATE:
-    first_day_this_month = today.replace(day=1)
-    last_day_prev_month = first_day_this_month - timedelta(days=1)
-    TO_DATE = last_day_prev_month.isoformat()
+# Always set TO_DATE as last day of previous month, ignoring env if set
+first_day_this_month = today.replace(day=1)
+last_day_prev_month = first_day_this_month - timedelta(days=1)
+TO_DATE = last_day_prev_month.isoformat()
 
 # FROM_DATE can be kept False if wizard supports it
 if not FROM_DATE:
     FROM_DATE = False
 
 print("From date:", FROM_DATE)
-print("To date (always last day of prev month):", TO_DATE)  
+print("To date (always last day of prev month):", TO_DATE) 
 session = requests.Session()
 USER_ID = None
 
