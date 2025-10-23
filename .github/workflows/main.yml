@@ -11,10 +11,12 @@ on:
         options:
           - All
           - Closing_stock.py
+          - Closing_stock_last_day.py
           - Closing_stock_1.py
           - Raw_materials.py
           - pending_slider.py
           - inventory_ageing.py
+          - inventory_ageing_last_day.py
           - inventory_ageing_1.py
           - inovice_summary.py
           - Relese_inovice_summary.py
@@ -79,10 +81,12 @@ jobs:
           # List all scripts
           ALL_SCRIPTS=(
             "Closing_stock.py"
+            "Closing_stock_last_day.py"
             "Closing_stock_1.py"
             "Raw_materials.py"
             "pending_slider.py"
             "inventory_ageing.py"
+            "inventory_ageing_last_day.py"
             "inventory_ageing_1.py"
             "inovice_summary.py"
             "Relese_inovice_summary.py"
