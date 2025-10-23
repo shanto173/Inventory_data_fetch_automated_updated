@@ -40,7 +40,7 @@ SHEET_INFO = {
     }
 }
 
-# ===== Default: previous month 1st to last day if env vars are empty =====
+# ===== Default: previous month 1st to last day, ignoring env for TO_DATE =====
 today = date.today()
 from_date_env = os.getenv("FROM_DATE", "").strip()
 to_date_env = os.getenv("TO_DATE", "").strip()
@@ -50,7 +50,8 @@ last_prev_month = first_this_month - timedelta(days=1)
 first_prev_month = last_prev_month.replace(day=1)
 
 FROM_DATE = from_date_env if from_date_env else first_prev_month.isoformat()
-TO_DATE = to_date_env if to_date_env else last_prev_month.isoformat()
+# Always set TO_DATE as last day of previous month, ignoring env if set
+TO_DATE = last_prev_month.isoformat()
 
 log.info(f"Using FROM_DATE={FROM_DATE}, TO_DATE={TO_DATE}")
 
