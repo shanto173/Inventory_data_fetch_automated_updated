@@ -47,7 +47,7 @@ to_date_env = os.getenv("TO_DATE", "").strip()
 
 FROM_DATE = from_date_env if from_date_env else today.replace(day=1).isoformat()
 yesterday = today - timedelta(days=1)
-TO_DATE = to_date_env if to_date_env else yesterday.isoformat()
+TO_DATE = yesterday.isoformat()
 
 log.info(f"Using FROM_DATE={FROM_DATE}, TO_DATE={TO_DATE}")
 
