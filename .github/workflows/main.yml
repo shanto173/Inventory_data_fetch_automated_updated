@@ -18,6 +18,7 @@ on:
           - inventory_ageing.py
           - inventory_ageing_last_day.py
           - inventory_ageing_1.py
+          - MT_spares.py
           - inovice_summary.py
           - Relese_inovice_summary.py
           - Consumption_stock_mar24_till.py
@@ -88,6 +89,7 @@ jobs:
             "inventory_ageing.py"
             "inventory_ageing_last_day.py"
             "inventory_ageing_1.py"
+            "MT_spares.py"
             "inovice_summary.py"
             "Relese_inovice_summary.py"
             "Consumption_stock_mar24_till.py"
