@@ -26,6 +26,7 @@ on:
           - Sep_inovice_summary.py
           - pending_invoice_last_month.py
           - Fg_stock.py
+          - Spares_stock.py
 
 
       from_date:
@@ -98,6 +99,7 @@ jobs:
             "Sep_inovice_summary.py"
             "pending_invoice_last_month.py"
             "Fg_stock.py"
+            "Spares_stock.py"
           )
 
           # Determine scripts to run
