@@ -31,12 +31,12 @@ COMPANIES = {
 
 SHEET_INFO = {
     "zipper": {
-        "sheet_id": "1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0",
-        "worksheet_name": "consm_zip"
+        "sheet_id": "1tKeLYTb7QxTX_LaI3BkOnPNdnI9mXYhE_yO1ARA0dXM",
+        "worksheet_name": "ZIPSpares_df"
     },
     "metal_trims": {
-        "sheet_id": "1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0",
-        "worksheet_name": "Consm_mt"
+        "sheet_id": "1tKeLYTb7QxTX_LaI3BkOnPNdnI9mXYhE_yO1ARA0dXM",
+        "worksheet_name": "MTSpares_df"
     }
 }
 
@@ -45,8 +45,7 @@ today = date.today()
 from_date_env = os.getenv("FROM_DATE", "").strip()
 to_date_env = os.getenv("TO_DATE", "").strip()
 
-# ✅ Change only FROM_DATE default logic
-FROM_DATE = from_date_env if from_date_env else "2024-03-01"
+FROM_DATE = from_date_env if from_date_env else today.replace(day=1).isoformat()
 TO_DATE = to_date_env if to_date_env else today.isoformat()
 
 log.info(f"Using FROM_DATE={FROM_DATE}, TO_DATE={TO_DATE}")
@@ -188,7 +187,7 @@ def fetch_opening_closing(company_id, cname):
                 "limit": 5000,
                 "context": {**context, "active_model": "stock.forecast.report", "active_id": 0, "active_ids": [0]},
                 "count_limit": 10000,
-                "domain": [["product_id.categ_id.complete_name", "ilike", "All / RM"]],
+                "domain": [["product_id.categ_id.complete_name", "ilike", "All / Spare Parts"]],
             },
         },
     }
