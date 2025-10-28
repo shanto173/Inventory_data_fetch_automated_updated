@@ -27,6 +27,7 @@ on:
           - pending_invoice_last_month.py
           - Fg_stock.py
           - Spares_stock.py
+          - spares_workcenter_df.py
 
 
       from_date:
@@ -100,6 +101,7 @@ jobs:
             "pending_invoice_last_month.py"
             "Fg_stock.py"
             "Spares_stock.py"
+            "spares_workcenter_df.py"
           )
 
           # Determine scripts to run
