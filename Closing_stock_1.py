@@ -277,12 +277,34 @@ if __name__ == "__main__":
     log.info(f"User info (allowed companies): {userinfo.get('user_companies', {})}")
 
     for cid, cname in COMPANIES.items():
-        if switch_company(cid):
-            wiz_id = create_forecast_wizard(cid, FROM_DATE, TO_DATE)
-            compute_forecast(cid, wiz_id)
-            records = fetch_opening_closing(cid, cname, wiz_id)
-            save_records_to_excel(records, cname)
-            # Push to Google Sheet
-            sheet_key = SHEET_INFO[re.sub(r'\W+', '_', cname.lower())]["sheet_id"]
-            worksheet_name = SHEET_INFO[re.sub(r'\W+', '_', cname.lower())]["worksheet_name"]
-            paste_downloaded_file_to_gsheet(cname, sheet_key, worksheet_name)
+        log.info(f"\n🚀 Processing company: {cname} (ID={cid})")
+        success = False
+
+        for attempt in range(1, 31):  # Retry up to 30 times for this company
+            try:
+                if switch_company(cid):
+                    wiz_id = create_forecast_wizard(cid, FROM_DATE, TO_DATE)
+                    compute_forecast(cid, wiz_id)
+                    records = fetch_opening_closing(cid, cname)
+                    save_records_to_excel(records, cname)
+
+                    # Push to Google Sheet
+                    sheet_key = SHEET_INFO[re.sub(r'\W+', '_', cname.lower())]["sheet_id"]
+                    worksheet_name = SHEET_INFO[re.sub(r'\W+', '_', cname.lower())]["worksheet_name"]
+                    paste_downloaded_file_to_gsheet(cname, sheet_key, worksheet_name)
+
+                    log.info(f"✅ Completed successfully for {cname} (Attempt {attempt})")
+                    success = True
+                    break
+
+            except Exception as e:
+                log.warning(f"⚠️ Attempt {attempt}/30 failed for {cname}: {e}")
+                if attempt < 30:
+                    wait_time = min(60, 5 * attempt)  # backoff delay, max 60s
+                    log.info(f"🔁 Retrying {cname} in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    log.error(f"❌ Max retries reached for {cname}. Moving to next company.")
+
+        if not success:
+            log.error(f"🚫 Skipping {cname} after 30 failed attempts.\n")

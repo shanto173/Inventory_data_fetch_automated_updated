@@ -10,6 +10,7 @@ from gspread_dataframe import set_with_dataframe
 from google.oauth2 import service_account
 import pandas as pd
 import pytz
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -220,42 +221,64 @@ if __name__ == "__main__":
     print("User info (allowed companies):", userinfo.get("user_companies", {}))
 
     for cid, cname in COMPANIES.items():
-        if switch_company(cid):
-            wiz_id = create_ageing_wizard(cid, FROM_DATE, TO_DATE)
-            compute_ageing(cid, wiz_id)
-            records = fetch_ageing(cid, cname, wiz_id)
+        print(f"\n🚀 Processing company: {cname} (ID={cid})")
+        success = False
 
-            if records:
-                df = pd.DataFrame(records)
-                # Drop first column
-                df = df.iloc[:, 1:]
-                output_file = f"{cname.lower().replace(' ', '_')}_stock_ageing_{today.isoformat()}.xlsx"
-                df.to_excel(output_file, index=False)
-                print(f"📂 Saved: {output_file}")
+        for attempt in range(1, 31):  # Retry up to 30 times per company
+            try:
+                if switch_company(cid):
+                    wiz_id = create_ageing_wizard(cid, FROM_DATE, TO_DATE)
+                    compute_ageing(cid, wiz_id)
+                    records = fetch_ageing(cid, cname, wiz_id)
 
-                # ========= GOOGLE SHEETS ==========
-                try:
-                    if cid == 1:  # Zipper
-                        client = gspread.service_account(filename="gcreds.json")
-                        sheet = client.open_by_key("1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0")
-                        worksheet = sheet.worksheet("age_ZIP")
-                    elif cid == 3:  # Metal Trims
-                        client = gspread.service_account(filename="gcreds.json")
-                        sheet = client.open_by_key("1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0")
-                        worksheet = sheet.worksheet("age_MT")
-                    else:
-                        worksheet = None
+                    if not records:
+                        raise Exception(f"No ageing data fetched for {cname}")
 
-                    if worksheet is not None and not df.empty:
-                        worksheet.clear()
-                        set_with_dataframe(worksheet, df)
-                        local_tz = pytz.timezone("Asia/Dhaka")
-                        local_time = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
-                        worksheet.update("W2", [[f"{local_time}"]])
-                        print(f"✅ Data pasted & timestamp updated: {local_time}")
+                    # ===== Excel save =====
+                    df = pd.DataFrame(records)
+                    # Drop first column
+                    df = df.iloc[:, 1:]
+                    output_file = f"{cname.lower().replace(' ', '_')}_stock_ageing_{today.isoformat()}.xlsx"
+                    df.to_excel(output_file, index=False)
+                    print(f"📂 Saved: {output_file}")
 
-                except Exception as e:
-                    print(f"❌ Error while pasting to Google Sheets: {e}")
+                    # ===== Google Sheets =====
+                    try:
+                        if cid == 1:  # Zipper
+                            client = gspread.service_account(filename="gcreds.json")
+                            sheet = client.open_by_key("1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0")
+                            worksheet = sheet.worksheet("age_ZIP")
+                        elif cid == 3:  # Metal Trims
+                            client = gspread.service_account(filename="gcreds.json")
+                            sheet = client.open_by_key("1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0")
+                            worksheet = sheet.worksheet("age_MT")
+                        else:
+                            worksheet = None
 
-            else:
-                print(f"❌ No ageing data fetched for {cname}")
+                        if worksheet is not None and not df.empty:
+                            worksheet.clear()
+                            set_with_dataframe(worksheet, df)
+                            local_tz = pytz.timezone("Asia/Dhaka")
+                            local_time = datetime.now(local_tz).strftime("%Y-%m-%d %H:%M:%S")
+                            worksheet.update("W2", [[f"{local_time}"]])
+                            print(f"✅ Data pasted & timestamp updated: {local_time}")
+
+                    except Exception as e:
+                        raise Exception(f"Google Sheets paste failed: {e}")
+
+                    # If all steps succeed, mark success
+                    success = True
+                    print(f"✅ Completed successfully for {cname} (Attempt {attempt})")
+                    break
+
+            except Exception as e:
+                print(f"⚠️ Attempt {attempt}/30 failed for {cname}: {e}")
+                if attempt < 30:
+                    wait_time = min(60, 5 * attempt)  # incremental delay up to 60s
+                    print(f"🔁 Retrying {cname} in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"❌ Max retries reached for {cname}. Skipping to next company.")
+
+        if not success:
+            print(f"🚫 Skipping {cname} after 30 failed attempts.\n")
