@@ -285,7 +285,7 @@ if __name__ == "__main__":
                 if switch_company(cid):
                     wiz_id = create_forecast_wizard(cid, FROM_DATE, TO_DATE)
                     compute_forecast(cid, wiz_id)
-                    records = fetch_opening_closing(cid, cname)
+                    records = fetch_opening_closing(cid, cname,wiz_id)
                     save_records_to_excel(records, cname)
 
                     # Push to Google Sheet
