@@ -193,7 +193,7 @@ for company_id, cname in COMPANIES.items():
     
     success = False
 
-    for attempt in range(1, 40):  # max 10 tries per company
+    for attempt in range(1, 5):  # max 10 tries per company
         try:
             print(f"Attempt {attempt}/10 downloading report for {cname}...")
             resp = session.post(download_url, data=download_payload, headers=headers, timeout=60)
@@ -229,7 +229,7 @@ for company_id, cname in COMPANIES.items():
         except Exception as e:
             print(f"❌ Exception during download/paste for {cname}: {e}")
 
-        time.sleep(5)  # wait before retry
+        time.sleep(20)  # wait before retry
 
     if not success:
         print(f"❌ Giving up after 10 attempts for {cname}")
