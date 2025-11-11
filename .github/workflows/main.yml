@@ -41,7 +41,7 @@ on:
 
   schedule:
     # Run every 30 minutes automatically
-    - cron: '0 */2 * * *'
+    - cron: '0 */4 * * *'
 
 jobs:
   download-and-upload:
