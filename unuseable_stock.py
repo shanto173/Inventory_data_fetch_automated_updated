@@ -35,7 +35,7 @@ SHEET_INFO = {
         "worksheet_name": "Z_RM_unusable"
     },
     "metal_trims": {
-        "sheet_id": "1kD4iCUqEAQsE_CLuv3dFSFNSjD2Hj2dTrE40deGZaK0",
+        "sheet_id": "1z6Zb_BronrO26rNS_gCKmsetoY7_OFysfIyvU3iazy0",
         "worksheet_name": "MT_RM_unusable"
     }
 }
