@@ -28,6 +28,7 @@ on:
           - Fg_stock.py
           - Spares_stock.py
           - spares_workcenter_df.py
+          - unuseable_stock.py
 
 
       from_date:
@@ -102,6 +103,7 @@ jobs:
             "Fg_stock.py"
             "Spares_stock.py"
             "spares_workcenter_df.py"
+            "unuseable_stock.py"
           )
 
           # Determine scripts to run
