@@ -46,7 +46,7 @@ from_date_env = os.getenv("FROM_DATE", "").strip()
 to_date_env = os.getenv("TO_DATE", "").strip()
 
 # ✅ Change only FROM_DATE default logic
-FROM_DATE = from_date_env if from_date_env else "2024-03-01"
+FROM_DATE = from_date_env if from_date_env else "2025-03-01"
 TO_DATE = to_date_env if to_date_env else today.isoformat()
 
 log.info(f"Using FROM_DATE={FROM_DATE}, TO_DATE={TO_DATE}")
