@@ -40,9 +40,7 @@ on:
         required: false
         default: ""
 
-  schedule:
-    # Run every 30 minutes automatically
-    - cron: '0 */8 * * *'
+  
 
 jobs:
   download-and-upload:
