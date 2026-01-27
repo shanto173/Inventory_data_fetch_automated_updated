@@ -280,7 +280,7 @@ if __name__ == "__main__":
         log.info(f"\n🚀 Processing company: {cname} (ID={cid})")
         success = False
 
-        for attempt in range(1, 31):  # Retry up to 30 times for this company
+        for attempt in range(1, 1):  # Retry up to 30 times for this company
             try:
                 if switch_company(cid):
                     wiz_id = create_forecast_wizard(cid, FROM_DATE, TO_DATE)

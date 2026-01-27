@@ -269,7 +269,7 @@ if __name__ == "__main__":
         log.info(f"\n🚀 Processing company: {cname} (ID={cid})")
         success = False
 
-        for attempt in range(1, 31):  # Retry up to 30 times for this company
+        for attempt in range(1, 1):  # Retry up to 30 times for this company
             try:
                 if not switch_company(cid):
                     raise Exception(f"Failed to switch company {cid}")

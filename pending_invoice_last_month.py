@@ -200,7 +200,7 @@ for company_id, cname in COMPANIES.items():
     
     success = False
     
-    for attempt in range(1, 30):  # max 10 tries
+    for attempt in range(1, 1):  # max 1 tries
         try:
             print(f"Attempt {attempt}/10 downloading report for {cname}...")
             resp = session.post(download_url, data=download_payload, headers=headers, timeout=60)
