@@ -218,7 +218,7 @@ if __name__ == "__main__":
         print(f"\n🚀 Processing company: {cname} (ID={cid})")
         success = False
 
-        for attempt in range(1, 1):  # Retry up to 1 times per company
+        for attempt in range(1, 2):  # Retry up to 1 times per company
             try:
                 if switch_company(cid):
                     wiz_id = create_ageing_wizard(cid, FROM_DATE, TO_DATE)
@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
             except Exception as e:
                 print(f"⚠️ Attempt {attempt}/30 failed for {cname}: {e}")
-                if attempt < 30:
+                if attempt < 2:
                     wait_time = min(60, 5 * attempt)  # incremental delay, max 60s
                     print(f"🔁 Retrying {cname} in {wait_time}s...")
                     time.sleep(wait_time)

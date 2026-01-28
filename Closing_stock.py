@@ -269,7 +269,7 @@ if __name__ == "__main__":
         log.info(f"\n🚀 Processing company: {cname} (ID={cid})")
         success = False
 
-        for attempt in range(1, 1):  # Retry up to 30 times for this company
+        for attempt in range(1, 2):  # Retry up to 30 times for this company
             try:
                 if not switch_company(cid):
                     raise Exception(f"Failed to switch company {cid}")
@@ -289,8 +289,8 @@ if __name__ == "__main__":
                 break
 
             except Exception as e:
-                log.warning(f"⚠️ Attempt {attempt}/30 failed for {cname}: {e}")
-                if attempt < 30:
+                log.warning(f"⚠️ Attempt {attempt}/2 failed for {cname}: {e}")
+                if attempt < 2:
                     wait_time = min(60, 5 * attempt)  # up to 60s wait
                     log.info(f"🔁 Retrying {cname} in {wait_time}s...")
                     time.sleep(wait_time)
@@ -298,4 +298,4 @@ if __name__ == "__main__":
                     log.error(f"❌ Max retries reached for {cname}. Moving to next company.")
 
         if not success:
-            log.error(f"🚫 Skipping {cname} after 30 failed attempts.\n")
+            log.error(f"🚫 Skipping {cname} after 2 failed attempts.\n")

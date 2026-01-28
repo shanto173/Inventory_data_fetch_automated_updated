@@ -200,7 +200,7 @@ for company_id, cname in COMPANIES.items():
     
     success = False
     
-    for attempt in range(1, 1):  # max 1 tries
+    for attempt in range(1, 2):  # max 1 tries
         try:
             print(f"Attempt {attempt}/10 downloading report for {cname}...")
             resp = session.post(download_url, data=download_payload, headers=headers, timeout=60)
@@ -239,4 +239,4 @@ for company_id, cname in COMPANIES.items():
         time.sleep(5)  # wait before retry
 
         if not success:
-            print(f"❌ Giving up after 10 attempts for {cname}")
+            print(f"❌ Giving up after 2 attempts for {cname}")
