@@ -29,6 +29,8 @@ on:
           - Spares_stock.py
           - spares_workcenter_df.py
           - unuseable_stock.py
+          - spares_ageing.py
+          - spares_ageing_closing_preious_month.py
 
 
       from_date:
@@ -40,9 +42,6 @@ on:
         required: false
         default: ""
 
-  schedule:
-    # Run every 30 minutes automatically
-    - cron: '30 4 * * *'
 
 jobs:
   download-and-upload:
@@ -104,6 +103,8 @@ jobs:
             "Spares_stock.py"
             "spares_workcenter_df.py"
             "unuseable_stock.py"
+            "spares_ageing.py"
+            "spares_ageing_closing_preious_month.py"
           )
 
           # Determine scripts to run
