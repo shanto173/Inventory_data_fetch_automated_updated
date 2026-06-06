@@ -47,8 +47,8 @@ print(f"📅 Report period: {DATE_FROM} → {DATE_TO}")
 # ---------------------- GOOGLE SHEETS ----------------------
 SHEET_ID = "1acV7UrmC8ogC54byMrKRTaD9i1b1Cf9QZ-H1qHU5ZZc"
 COMPANY_SHEETS = {
-    1: {"sheet": "Zip_Pending_order", "clear_range": "A2:AD", "timestamp_cell": "C1"},
-    3: {"sheet": "MT_Pending_order", "clear_range": "A2:AD", "timestamp_cell": "C1"},
+    1: {"sheet": "Zip_ OA Production Pending", "clear_range": "A2:AD", "timestamp_cell": "C1"},
+    3: {"sheet": "MT_ OA Production Pending", "clear_range": "A2:AD", "timestamp_cell": "C1"},
 }
 
 scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
