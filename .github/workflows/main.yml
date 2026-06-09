@@ -1,6 +1,13 @@
 name: Odoo Stock Report Automation
 
 on:
+  schedule:
+    # Bangladesh Time: 10 AM (4:30 AM UTC)
+    - cron: '30 4 * * *'
+    # Bangladesh Time: 11 AM (5:30 AM UTC)
+    - cron: '30 5 * * *'
+    # Bangladesh Time: 12 PM (6:30 AM UTC)
+    - cron: '30 6 * * *'
   workflow_dispatch:
     inputs:
       script_choice:
